@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZENU SHOP - เติมเงิน</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+
+    <!-- EmailJS SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@emailjs/browser@3/dist/email.min.js"></script>
+
+    <!-- FontAwesome & Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-body: #0f0f13;
+            --bg-card: #18181f;
+            --bg-header: rgba(15, 15, 19, 0.95);
+            --accent: #ff0000;
+            --accent-glow: rgba(255, 0, 0, 0.4);
+            --gold: #ffc107;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: #2a2a35;
+            --radius: 16px;
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Kanit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: -1;
+        }
+
+        /* --- PRELOADER --- */
+        #loading-overlay { 
+            position: fixed; inset: 0; background: #000; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            transition: opacity 0.5s;
+        }
+        .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* HEADER */
+        #header {
+            width: 100%; height: 80px; 
+            background: var(--bg-header); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; position: sticky; top: 0; z-index: 100;
+            flex-shrink: 0;
+        }
+        .brand { display: flex; align-items: center; gap: 14px; font-family: 'Poppins'; cursor: pointer; text-decoration: none; }
+        .brand-icon { 
+            width: 44px; height: 44px; background: linear-gradient(135deg, #222, #000); 
+            border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            color: var(--accent); font-weight: 900; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .brand-text { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #fff; } 
+        .brand-text span { color: var(--accent); }
+
+        .header-right { display: flex; align-items: center; gap: 12px; }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #ccc;
+            padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            font-family: 'Poppins'; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            height: 44px; text-decoration: none; white-space: nowrap;
+        }
+        .nav-btn:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .nav-btn i { font-size: 14px; }
+
+        .points-badge { 
+            background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); color: var(--gold); 
+            padding: 0 20px; height: 44px; border-radius: 22px; font-weight: 700; cursor: default; 
+            display: flex; align-items: center; gap: 8px; font-size: 14px; white-space: nowrap;
+        }
+
+        @media (max-width: 600px) {
+            #header { padding: 0 15px; height: 70px; }
+            .brand-text { display: none; }
+            .nav-btn span { display: none; }
+            .nav-btn { padding: 0; width: 40px; justify-content: center; gap: 0; }
+            .points-badge { padding: 0 10px; font-size: 12px; height: 36px; }
+            .points-badge span.label { display: inline-block !important; }
+            .points-badge i { font-size: 12px; }
+        }
+
+        /* MAIN CARD */
+        .main-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: 20px;
+            padding: 40px 30px;
+            width: 100%;
+            max-width: 480px;
+            margin-top: 40px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.5);
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.5s ease;
+        }
+        @keyframes slideUp { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+
+        .tm-logo {
+            width: 80px; height: 80px;
+            background: linear-gradient(135deg, #ff9800, #f57c00);
+            border-radius: 20px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 40px; color: #fff;
+            margin: 0 auto 20px;
+            box-shadow: 0 10px 20px rgba(255, 152, 0, 0.3);
+        }
+
+        h2 { margin: 0; font-size: 26px; font-weight: 800; color: #fff; letter-spacing: -0.5px; }
+        p { color: #888; font-size: 14px; margin-top: 5px; margin-bottom: 30px; }
+
+        .balance-info {
+            background: rgba(255, 193, 7, 0.05);
+            border: 1px dashed rgba(255, 193, 7, 0.3);
+            border-radius: 12px;
+            padding: 15px;
+            margin-bottom: 25px;
+            display: flex; justify-content: center; align-items: center; gap: 10px;
+            color: var(--gold); font-weight: 600; font-size: 14px;
+        }
+        .balance-val { font-size: 20px; font-weight: 800; }
+
+        .input-box { width: 100%; margin-bottom: 20px; text-align: left; }
+        .input-box label { display: block; color: var(--text-muted); font-size: 12px; margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .input-box input {
+            width: 100%; background: #0a0a0c; border: 1px solid var(--border); color: #fff;
+            padding: 16px; border-radius: 12px; font-family: 'Kanit'; font-size: 14px;
+            transition: 0.2s; outline: none;
+        }
+        .input-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,0,0,0.15); }
+
+        .btn-submit {
+            width: 100%; background: var(--accent); color: white;
+            padding: 16px; border-radius: 12px; font-weight: 700;
+            border: none; cursor: pointer; transition: 0.2s;
+            font-size: 16px; display: flex; align-items: center; justify-content: center; gap: 10px;
+            box-shadow: 0 10px 20px rgba(0,0,0,0.2);
+        }
+        .btn-submit:hover { transform: translateY(-2px); box-shadow: 0 10px 30px var(--accent-glow); }
+        .btn-submit:disabled { background: #333; cursor: not-allowed; transform: none; box-shadow: none; color: #666; }
+
+        .status-msg { margin-top: 20px; font-size: 14px; font-weight: 600; min-height: 24px; opacity: 0; transition: opacity 0.3s; }
+        .status-msg.visible { opacity: 1; }
+        .status-success { color: #00e676; }
+        .status-error { color: #ff4444; }
+        .status-pending { color: #ff9800; }
+
+        .tutorial { 
+            background: rgba(255,255,255,0.03); border-radius: 12px; padding: 20px; 
+            text-align: left; font-size: 12px; color: #aaa; margin-top: 30px; 
+            border: 1px solid #2a2a35; line-height: 1.6;
+        }
+        .tutorial b { color: #fff; font-size: 13px; display: block; margin-bottom: 8px; }
+
+        .loader { width: 20px; height: 20px; border: 3px solid #fff; border-bottom-color: transparent; border-radius: 50%; display: inline-block; animation: rotation 1s linear infinite; }
+        @keyframes rotation { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+
+        /* Recent Requests List */
+        .recent-requests {
+            width: 100%; margin-top: 30px; text-align: left;
+        }
+        .req-item {
+            background: rgba(255,255,255,0.03); border: 1px solid #333; padding: 10px; 
+            border-radius: 8px; margin-bottom: 8px; display: flex; justify-content: space-between; align-items: center;
+            font-size: 12px;
+        }
+        .req-status { font-weight: bold; padding: 2px 8px; border-radius: 4px; text-transform: uppercase; font-size: 10px; }
+        .st-pending { color: #ff9800; background: rgba(255, 152, 0, 0.1); border: 1px solid rgba(255, 152, 0, 0.2); }
+        .st-completed { color: #00e676; background: rgba(0, 230, 118, 0.1); border: 1px solid rgba(0, 230, 118, 0.2); }
+        .st-rejected { color: #ff4444; background: rgba(255, 68, 68, 0.1); border: 1px solid rgba(255, 68, 68, 0.2); }
+
+        /* --- TOAST NOTIFICATION STYLES --- */
+        #toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 10000;
+            display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #18181f; color: #fff; min-width: 280px; max-width: 320px;
+            padding: 16px; border-radius: 12px; border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; align-items: flex-start; gap: 12px;
+            transform: translateX(100%); opacity: 0;
+            animation: toastSlideIn 0.3s forwards ease-out;
+            pointer-events: auto; position: relative; overflow: hidden;
+        }
+        .toast.hide { animation: toastSlideOut 0.3s forwards ease-in; }
+        @keyframes toastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastSlideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        
+        .toast-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+        .toast.success .toast-icon { color: #00e676; }
+        .toast.error .toast-icon { color: #ff4444; }
+        .toast.info .toast-icon { color: #2196f3; }
+        
+        .toast-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .toast-title { font-weight: 700; font-size: 14px; line-height: 1.2; }
+        .toast-msg { font-size: 12px; color: #aaa; line-height: 1.4; }
+        
+        .toast-close { position: absolute; top: 10px; right: 10px; color: #666; cursor: pointer; font-size: 12px; }
+        .toast-close:hover { color: #fff; }
+        
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); width: 100%; animation: toastProgress 3s linear forwards; }
+        .toast.success .toast-progress { background: #00e676; }
+        .toast.error .toast-progress { background: #ff4444; }
+        .toast.info .toast-progress { background: #2196f3; }
+        @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    <div id="toast-container"></div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div style="color:#fff; font-weight:bold; letter-spacing:1px; font-size:12px;">LOADING...</div>
+    </div>
+
+    <div id="header">
+        <div class="brand" onclick="window.location.href='index.html'">
+            <div class="brand-icon">Z</div>
+            <div class="brand-text">ZENU <span>SHOP</span></div>
+        </div>
+        <div class="header-right">
+            <div class="points-badge">
+                <i class="fa-solid fa-coins"></i> 
+                <span id="header-points" class="label">...</span> <span style="font-size: 10px; margin-left: 2px;">P</span>
+            </div>
+            <button class="nav-btn" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-arrow-left"></i> <span>BACK TO SHOP</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-card">
+        <div class="tm-logo"><i class="fa-solid fa-wallet"></i></div>
+        <h2>เติมเงินพอยท์</h2>
+        <p>ระบบแจ้งโอนอัตโนมัติ (TrueMoney Gift)</p>
+
+        <div class="balance-info">
+            <i class="fa-solid fa-coins"></i> ยอดคงเหลือ: 
+            <span class="balance-val" id="card-points">...</span> P
+        </div>
+
+        <div class="input-box">
+            <label>ลิ้งค์ซองของขวัญ (Angpao Link)</label>
+            <input type="text" id="angpao-link" placeholder="https://gift.truemoney.com/campaign/?v=...">
+        </div>
+
+        <button class="btn-submit" id="btn-topup" onclick="processTopup()">
+            <i class="fa-solid fa-paper-plane"></i> ส่งคำขอเติมเงิน
+        </button>
+        <div id="status-area" class="status-msg"></div>
+
+        <div class="recent-requests">
+            <label style="color:#666; font-size:11px; font-weight:bold; text-transform:uppercase;">ประวัติการแจ้งโอนล่าสุด</label>
+            <div id="my-requests-list">
+                <!-- Requests will be loaded here -->
+            </div>
+        </div>
+
+        <div class="tutorial">
+            <b><i class="fa-solid fa-circle-info"></i> วิธีการใช้งาน:</b>
+            1. เข้าแอป TrueMoney Wallet เลือกเมนู "ส่งซองของขวัญ"<br>
+            2. กรอกจำนวนเงินที่ต้องการเติม<br>
+            3. เลือกประเภท "แบ่งจำนวนเงินเท่ากัน"<br>
+            4. กรอกจำนวนคนรับเป็น "1 คน"<br>
+            5. สร้างซองและคัดลอกลิ้งค์มาวางที่ช่องด้านบน
+        </div>
+    </div>
+    <script src="API.js"></script>
+    <script>
+        const firebaseConfig = window.getSecureConfig();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const rtdb = firebase.database();
+        
+        let currentUser = null;
+
+        // --- ตั้งค่า EmailJS ตรงนี้ ---
+        const EMAILJS_SERVICE_ID = "service_xuqrvg4"; 
+        const EMAILJS_TEMPLATE_ID = "template_hhmv45n"; 
+        const EMAILJS_PUBLIC_KEY = "7gaavlGnJ9JjhLxb7"; 
+
+        // --- ตั้งค่าอีเมลแอดมิน (สำคัญมาก) ---
+        const FIXED_ADMIN_EMAILS = ["piywatkhonohian@gmail.com"]; 
+
+        auth.onAuthStateChanged((user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('loading-overlay').style.opacity = '0';
+                setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 500);
+
+                rtdb.ref(`users/${user.uid}/points`).on('value', (snapshot) => {
+                    const points = snapshot.val() || 0;
+                    const formatted = points.toLocaleString();
+                    document.getElementById('header-points').innerText = formatted;
+                    document.getElementById('card-points').innerText = formatted;
+                });
+
+                listenMyRequests(user.uid);
+            } else {
+                window.location.href = 'Login.html';
+            }
+        });
+
+        async function processTopup() {
+            const linkInput = document.getElementById('angpao-link');
+            const btn = document.getElementById('btn-topup');
+            const link = linkInput.value.trim();
+
+            showStatus("", "");
+
+            if (!link) return showToast("กรุณาวางลิ้งค์ซองของขวัญ", "error");
+
+            const urlPattern = /^https?:\/\/gift\.truemoney\.com\/campaign\/\?v=[a-zA-Z0-9]+/;
+            if (!urlPattern.test(link)) return showToast("รูปแบบลิ้งค์ไม่ถูกต้อง (ต้องมีรหัส v=...)", "error");
+
+            btn.disabled = true;
+            btn.innerHTML = '<span class="loader"></span> กำลังส่งข้อมูล...';
+
+            try {
+                // 1. Check Duplicate
+                const snap = await rtdb.ref('topup_requests').orderByChild('link').equalTo(link).once('value');
+                if (snap.exists()) {
+                    showToast("คุณเคยส่งลิ้งค์นี้ไปแล้ว หรือกำลังรอตรวจสอบ", "error");
+                    resetBtn();
+                    return;
+                }
+
+                // 2. Get Username
+                const userSnap = await rtdb.ref('users/' + currentUser.uid).once('value');
+                const username = userSnap.val()?.username || 'Unknown User';
+
+                // 3. Push to Firebase
+                await rtdb.ref('topup_requests').push({
+                    uid: currentUser.uid,
+                    link: link,
+                    username: username,
+                    status: 'pending',
+                    notification: 'unread',
+                    timestamp: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                // 4. Send Notify via EmailJS (Updated with time)
+                notifyAdmins(link, username);
+
+                showToast("ส่งคำขอสำเร็จ! กรุณารอแอดมินตรวจสอบ", "success");
+                linkInput.value = "";
+                
+                setTimeout(() => resetBtn(), 3000);
+
+            } catch (error) {
+                console.error(error);
+                showToast("เกิดข้อผิดพลาดในการเชื่อมต่อ", "error");
+                resetBtn();
+            }
+        }
+
+        async function notifyAdmins(requestLink, requestUser) {
+            // เช็คว่า Library โหลดมาไหม
+            if (!window.emailjs) {
+                console.error("EmailJS Library not found");
+                alert("ระบบแจ้งเตือน EmailJS โหลดไม่สำเร็จ (แต่บันทึกข้อมูลแล้ว)");
+                return;
+            }
+
+            const targets = FIXED_ADMIN_EMAILS;
+            
+            console.log("กำลังส่งอีเมลแจ้งเตือน...");
+
+            for (const email of targets) {
+                const templateParams = {
+                    to_email: email, 
+                    to_name: "Admin",
+                    from_name: requestUser,
+                    message: `User: ${requestUser} | Link: ${requestLink}`,
+                    link: requestLink,
+                    time: new Date().toLocaleString('th-TH') // เพิ่มตรงนี้เพื่อให้เวลาแสดงในอีเมล
+                };
+
+                try {
+                    // ส่ง Public Key ไปเป็น Argument ที่ 4
+                    const response = await window.emailjs.send(
+                        EMAILJS_SERVICE_ID, 
+                        EMAILJS_TEMPLATE_ID, 
+                        templateParams, 
+                        EMAILJS_PUBLIC_KEY
+                    );
+                    console.log(`ส่งอีเมลสำเร็จ: ${response.status} ${response.text}`);
+                } catch (error) {
+                    console.error("EmailJS Error:", error);
+                    alert("แจ้งเตือน: ส่งอีเมลไม่ผ่าน! " + JSON.stringify(error)); 
+                }
+            }
+        }
+
+        function listenMyRequests(uid) {
+            rtdb.ref('topup_requests').orderByChild('uid').equalTo(uid).limitToLast(3).on('value', snap => {
+                const list = document.getElementById('my-requests-list');
+                list.innerHTML = '';
+                const data = snap.val();
+                if(!data) {
+                    list.innerHTML = '<div style="text-align:center; color:#666; font-size:12px;">ไม่มีประวัติการแจ้งโอน</div>';
+                    return;
+                }
+                const items = Object.values(data).sort((a,b) => b.timestamp - a.timestamp);
+                items.forEach(item => {
+                    const date = new Date(item.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    let statusClass = 'st-pending';
+                    let statusText = 'รอตรวจสอบ';
+                    if(item.status === 'completed') { statusClass = 'st-completed'; statusText = `สำเร็จ (+${item.amount || '?'} P)`; }
+                    else if(item.status === 'rejected') { statusClass = 'st-rejected'; statusText = 'ถูกปฏิเสธ'; }
+
+                    list.innerHTML += `
+                        <div class="req-item">
+                            <div style="color:#aaa;"><i class="fa-regular fa-clock"></i> ${date}</div>
+                            <div class="req-status ${statusClass}">${statusText}</div>
+                        </div>
+                    `;
+                });
+            });
+        }
+
+        function resetBtn() {
+            const btn = document.getElementById('btn-topup');
+            btn.disabled = false;
+            btn.innerHTML = '<i class="fa-solid fa-paper-plane"></i> ส่งคำขอเติมเงิน';
+        }
+
+        function showStatus(text, type) {
+            const el = document.getElementById('status-area');
+            el.innerText = text;
+            let colorClass = 'status-error';
+            if(type === 'success') colorClass = 'status-success';
+            if(type === 'pending') colorClass = 'status-pending';
+            if(text) el.className = `status-msg visible ${colorClass}`;
+            else el.className = `status-msg`;
+        }
+
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            let icon = 'fa-circle-info';
+            let title = 'Notification';
+            if(type === 'success') { icon = 'fa-circle-check'; title = 'Success'; }
+            if(type === 'error') { icon = 'fa-circle-exclamation'; title = 'Error'; }
+
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} toast-icon"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-msg">${message}</div>
+                </div>
+                <div class="toast-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></div>
+                <div class="toast-progress"></div>
+            `;
+            container.appendChild(toast);
+            setTimeout(() => {
+                toast.classList.add('hide');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 3000);
+        }
+    </script>
+</body>
+</html>
+
+

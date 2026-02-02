@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZENU SHOP - ACCOUNT</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+
+    <!-- FontAwesome & Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Poppins:wght@400;600;800&display=swap" rel="stylesheet">
+
+    <style>
+        :root { 
+            --bg-body: #0f0f13; 
+            --bg-header: rgba(15, 15, 19, 0.95);
+            --accent: #ff0000; 
+            --accent-glow: rgba(255, 0, 0, 0.4); 
+            --text-main: #ffffff; 
+            --text-muted: #a0a0a0;
+            --border: #2a2a35; 
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body { 
+            margin: 0; padding: 0; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            font-family: 'Kanit', sans-serif; 
+            height: 100vh; 
+            display: flex; 
+            flex-direction: column; 
+            overflow: hidden; 
+        }
+
+        .bg-grid { 
+            position: fixed; inset: 0; 
+            background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); 
+            background-size: 40px 40px; 
+            z-index: -1; 
+        }
+
+        /* --- PAGE LOADER --- */
+        #page-loader {
+            position: fixed; inset: 0; background: #0f0f13; z-index: 9999;
+            display: flex; align-items: center; justify-content: center;
+            flex-direction: column; transition: opacity 0.5s ease;
+        }
+        .loader-spinner {
+            width: 50px; height: 50px; border: 3px solid #333; 
+            border-top: 3px solid var(--accent); border-radius: 50%; 
+            animation: spin 0.8s linear infinite; margin-bottom: 20px;
+        }
+        .loader-text {
+            font-family: 'Poppins'; font-weight: 700; letter-spacing: 2px; font-size: 14px;
+            color: #fff; animation: pulse 1.5s infinite;
+        }
+        @keyframes pulse { 0%, 100% { opacity: 0.6; } 50% { opacity: 1; } }
+
+        /* --- HEADER --- */
+        #header {
+            width: 100%; height: 70px; flex-shrink: 0;
+            background: var(--bg-header); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; position: sticky; top: 0; z-index: 100;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-family: 'Poppins'; cursor: pointer; text-decoration: none; }
+        .brand-icon { 
+            width: 38px; height: 38px; background: linear-gradient(135deg, #222, #000); 
+            border: 1px solid #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; 
+            color: var(--accent); font-weight: 900; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .brand-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #fff; } 
+        .brand-text span { color: var(--accent); }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #888;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            font-family: 'Poppins'; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            height: 38px;
+        }
+        .nav-btn:hover { border-color: #555; color: #fff; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .nav-btn i { font-size: 14px; }
+
+        @media (max-width: 600px) {
+            #header { padding: 0 15px; height: 60px; }
+            .brand-text { display: none; }
+            .nav-btn span { display: none; }
+            .nav-btn { padding: 8px; width: 38px; justify-content: center; gap: 0; }
+        }
+
+        /* --- LOGIN BOX WRAPPER --- */
+        .main-content {
+            flex: 1; display: flex; align-items: center; justify-content: center; padding: 20px;
+            opacity: 0; transform: translateY(20px); transition: all 0.6s ease;
+            overflow-y: auto;
+        }
+        .main-content.visible { opacity: 1; transform: translateY(0); }
+
+        .login-box { 
+            background: #18181f; border: 1px solid #333; padding: 35px; border-radius: 16px; 
+            width: 100%; max-width: 420px; box-shadow: 0 0 50px rgba(0,0,0,0.5); 
+            text-align: center; position: relative; z-index: 10; margin: auto;
+        }
+
+        .box-title { font-family: 'Poppins', sans-serif; font-size: 24px; font-weight: 800; margin-bottom: 25px; letter-spacing: -0.5px; }
+        .box-title span { color: var(--accent); }
+        
+        /* Toggle Switch */
+        .auth-toggle {
+            display: flex; background: #111; padding: 4px; border-radius: 8px; margin-bottom: 25px; border: 1px solid #333;
+        }
+        .toggle-btn {
+            flex: 1; padding: 10px; text-align: center; font-size: 12px; font-weight: 700; color: #666; cursor: pointer; border-radius: 6px; transition: 0.2s;
+        }
+        .toggle-btn.active { background: #222; color: #fff; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+
+        .input-group { margin-bottom: 15px; text-align: left; position: relative; }
+        .input-group label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+        .input-group input { width: 100%; background: #0a0a0c; border: 1px solid #333; color: #fff; padding: 14px; border-radius: 8px; font-family: 'Kanit'; transition: 0.2s; font-size: 14px; padding-right: 45px; }
+        .input-group input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,0,0,0.15); }
+        
+        /* Eye Icon */
+        .password-toggle {
+            position: absolute; right: 12px; top: 38px; color: #666; cursor: pointer; transition: 0.2s;
+        }
+        .password-toggle:hover { color: #fff; }
+
+        .btn-full { width: 100%; padding: 14px; border-radius: 8px; border: none; font-weight: 700; cursor: pointer; margin-top: 15px; font-size: 14px; background: var(--accent); color: white; text-transform: uppercase; transition: 0.2s; }
+        .btn-full:hover { box-shadow: 0 5px 20px var(--accent-glow); transform: translateY(-2px); }
+        .btn-full:disabled { background: #333; cursor: not-allowed; transform: none; box-shadow: none; color: #666; }
+        
+        .error-msg { color: #ff4444; font-size: 12px; margin-bottom: 15px; display: none; background: rgba(255,68,68,0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(255,68,68,0.2); }
+        .success-msg { color: #00e676; font-size: 12px; margin-bottom: 15px; display: none; background: rgba(0,230,118,0.1); padding: 10px; border-radius: 6px; border: 1px solid rgba(0,230,118,0.2); }
+        
+        .loading-spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #fff; border-top-color: transparent; border-radius: 50%; animation: spin 0.8s linear infinite; margin-right: 5px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Forgot Password Link */
+        .forgot-link {
+            text-align: right; font-size: 12px; color: #888; margin-top: -10px; margin-bottom: 15px; cursor: pointer; transition: 0.2s; display: inline-block; width: 100%;
+        }
+        .forgot-link:hover { color: var(--accent); text-decoration: underline; }
+
+        .back-link {
+            text-align: center; font-size: 12px; color: #666; margin-top: 15px; cursor: pointer;
+        }
+        .back-link:hover { color: #fff; }
+
+        /* Hidden by default */
+        .register-field { display: none; }
+        .reset-only { display: none; }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <!-- PRE-LOADER -->
+    <div id="page-loader">
+        <div class="loader-spinner"></div>
+        <div class="loader-text">AUTHENTICATING...</div>
+    </div>
+
+    <div id="header">
+        <div class="brand" onclick="window.location.href='index.html'">
+            <div class="brand-icon">Z</div>
+            <div class="brand-text">ZENU <span>ACCOUNT</span></div>
+        </div>
+        <div class="header-right">
+            <button class="nav-btn" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-arrow-left"></i> <span>BACK TO SHOP</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-content" id="main-content">
+        <div class="login-box">
+            <div class="box-title" id="form-title">MEMBER <span>LOGIN</span></div>
+            
+            <div class="auth-toggle" id="auth-tabs">
+                <div class="toggle-btn active" onclick="switchMode('login')" id="tab-login">LOGIN</div>
+                <div class="toggle-btn" onclick="switchMode('register')" id="tab-register">REGISTER</div>
+            </div>
+
+            <div class="error-msg" id="auth-error"></div>
+            <div class="success-msg" id="auth-success"></div>
+            
+            <!-- REGISTER: NAME -->
+            <div class="input-group register-field" id="group-name">
+                <label>DISPLAY NAME (ชื่อบัญชี)</label>
+                <input type="text" id="reg-name" placeholder="ตั้งชื่อบัญชีของคุณ (3-20 ตัวอักษร)">
+            </div>
+
+            <!-- REGISTER: EMAIL -->
+            <div class="input-group register-field" id="group-email">
+                <label>EMAIL ADDRESS (อีเมล)</label>
+                <input type="email" id="reg-email" placeholder="example@gmail.com">
+            </div>
+
+            <!-- LOGIN: USER/EMAIL -->
+            <div class="input-group" id="group-login-user">
+                <label id="label-user">USERNAME OR EMAIL</label>
+                <input type="text" id="login-input" placeholder="ชื่อบัญชี หรือ อีเมล">
+            </div>
+
+            <!-- RESET PASSWORD: EMAIL ONLY (New separate input) -->
+            <div class="input-group reset-only" id="group-reset-email" style="display:none;">
+                <label>ENTER YOUR EMAIL</label>
+                <input type="email" id="reset-email-input" placeholder="อีเมล (ที่ใช้สมัครบัญชี)">
+            </div>
+            
+            <!-- LOGIN PASSWORD -->
+            <div class="input-group" id="group-pass">
+                <label>PASSWORD</label>
+                <input type="password" id="auth-pass" placeholder="รหัสผ่าน (6 ตัวขึ้นไป)">
+                <i class="fa-solid fa-eye-slash password-toggle" onclick="togglePassword('auth-pass', this)"></i>
+            </div>
+
+            <!-- FORGOT PASSWORD LINK -->
+            <div class="forgot-link" id="forgot-btn" onclick="switchMode('reset')">ลืมรหัสผ่าน?</div>
+
+            <!-- CONFIRM PASS (Register) -->
+            <div class="input-group register-field" id="group-confirm">
+                <label>CONFIRM PASSWORD</label>
+                <input type="password" id="auth-pass-confirm" placeholder="ยืนยันรหัสผ่านอีกครั้ง">
+                <i class="fa-solid fa-eye-slash password-toggle" onclick="togglePassword('auth-pass-confirm', this)"></i>
+            </div>
+
+            <button id="btn-action" class="btn-full" onclick="handleSubmit()">LOGIN NOW</button>
+            
+            <div class="back-link reset-only" onclick="switchMode('login')"><i class="fa-solid fa-arrow-left"></i> กลับไปหน้าเข้าสู่ระบบ</div>
+        </div>
+    </div>
+    <script src="API.js"></script>
+    <script>
+        const firebaseConfig = window.getSecureConfig();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const rtdb = firebase.database();
+
+        let currentMode = 'login'; 
+        let isRegistering = false; // ตัวแปรล็อคป้องกันเปลี่ยนหน้าก่อนบันทึกเสร็จ
+
+        // Initial Auth Check
+        auth.onAuthStateChanged(async (user) => {
+            // เช็คว่า ถ้ามี user และ ไม่ได้กำลังสมัครสมาชิกอยู่ ถึงจะเปลี่ยนหน้า
+            if (user && !isRegistering) {
+                window.location.replace('index.html');
+            } else if (!user) {
+                // ถ้าไม่มี user ให้แสดงหน้า login ปกติ
+                const loader = document.getElementById('page-loader');
+                const content = document.getElementById('main-content');
+                if(loader) {
+                    loader.style.opacity = '0';
+                    setTimeout(() => {
+                        loader.style.display = 'none';
+                        if(content) content.classList.add('visible');
+                    }, 500);
+                }
+            }
+        });
+
+        function switchMode(mode) {
+            currentMode = mode;
+            document.getElementById('auth-error').style.display = 'none';
+            document.getElementById('auth-success').style.display = 'none';
+            
+            const regFields = document.querySelectorAll('.register-field');
+            const loginField = document.getElementById('group-login-user');
+            const resetField = document.getElementById('group-reset-email');
+            const passField = document.getElementById('group-pass');
+            const forgotBtn = document.getElementById('forgot-btn');
+            const authTabs = document.getElementById('auth-tabs');
+            const resetLinks = document.querySelectorAll('.reset-only');
+            
+            if(mode === 'login') {
+                document.getElementById('tab-login').classList.add('active');
+                document.getElementById('tab-register').classList.remove('active');
+                document.getElementById('form-title').innerHTML = 'MEMBER <span>LOGIN</span>';
+                document.getElementById('btn-action').innerText = 'LOGIN NOW';
+                document.getElementById('login-input').value = '';
+                document.getElementById('auth-pass').value = '';
+                
+                authTabs.style.display = 'flex';
+                regFields.forEach(el => el.style.display = 'none');
+                resetLinks.forEach(el => el.style.display = 'none');
+                
+                loginField.style.display = 'block'; 
+                resetField.style.display = 'none'; 
+                
+                passField.style.display = 'block';
+                forgotBtn.style.display = 'block';
+                
+            } else if (mode === 'register') {
+                document.getElementById('tab-register').classList.add('active');
+                document.getElementById('tab-login').classList.remove('active');
+                document.getElementById('form-title').innerHTML = 'CREATE <span>ACCOUNT</span>';
+                document.getElementById('btn-action').innerText = 'CREATE ACCOUNT';
+                
+                authTabs.style.display = 'flex';
+                regFields.forEach(el => el.style.display = 'block');
+                resetLinks.forEach(el => el.style.display = 'none');
+                
+                loginField.style.display = 'none'; 
+                resetField.style.display = 'none'; 
+                
+                passField.style.display = 'block';
+                forgotBtn.style.display = 'none';
+                
+            } else if (mode === 'reset') {
+                document.getElementById('form-title').innerHTML = 'RESET <span>PASSWORD</span>';
+                document.getElementById('btn-action').innerText = 'SEND RESET LINK';
+                document.getElementById('reset-email-input').value = ''; 
+                
+                authTabs.style.display = 'none';
+                regFields.forEach(el => el.style.display = 'none');
+                resetLinks.forEach(el => el.style.display = 'block');
+                
+                loginField.style.display = 'none'; 
+                resetField.style.display = 'block'; 
+                
+                passField.style.display = 'none';
+                forgotBtn.style.display = 'none';
+            }
+        }
+
+        function togglePassword(fieldId, icon) {
+            const input = document.getElementById(fieldId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            } else {
+                input.type = 'password';
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            }
+        }
+
+        async function handleSubmit() {
+            const btn = document.getElementById('btn-action');
+            document.getElementById('auth-error').style.display = 'none';
+            document.getElementById('auth-success').style.display = 'none';
+            const passIn = document.getElementById('auth-pass').value;
+
+            btn.disabled = true; 
+            btn.innerHTML = '<span class="loading-spinner"></span> PROCESSING...';
+
+            try {
+                if (currentMode === 'login') {
+                    // --- LOGIN LOGIC ---
+                    const loginInput = document.getElementById('login-input').value.trim();
+                    if(!loginInput || !passIn) throw new Error("กรุณากรอกข้อมูลให้ครบถ้วน");
+
+                    let emailToLogin = loginInput;
+                    
+                    if (!loginInput.includes('@')) {
+                        const usersRef = rtdb.ref('users');
+                        const snap = await usersRef.orderByChild('username').equalTo(loginInput).once('value');
+                        
+                        let found = false;
+                        if (snap.exists()) {
+                            const usersData = snap.val();
+                            const firstUserId = Object.keys(usersData)[0];
+                            const userData = usersData[firstUserId];
+                            
+                            if (userData && userData.email) {
+                                emailToLogin = userData.email;
+                                found = true;
+                            }
+                        }
+                        if (!found) throw new Error("ไม่พบชื่อผู้ใช้นี้ในระบบ");
+                    }
+                    await auth.signInWithEmailAndPassword(emailToLogin, passIn);
+                    // Login will be handled by onAuthStateChanged
+
+                } else if (currentMode === 'register') {
+                    // --- REGISTER LOGIC (UPDATED) ---
+                    isRegistering = true; // LOCK: Prevent auto-redirect before saving
+
+                    const name = document.getElementById('reg-name').value.trim();
+                    const email = document.getElementById('reg-email').value.trim();
+                    const confirmPass = document.getElementById('auth-pass-confirm').value;
+
+                    // 1. Validation
+                    if(name.length < 3) throw new Error("ชื่อบัญชีต้องมีอย่างน้อย 3 ตัวอักษร");
+                    if(/[^a-zA-Z0-9_]/.test(name)) throw new Error("ชื่อบัญชีควรมีเฉพาะภาษาอังกฤษ ตัวเลข หรือ _");
+                    
+                    if(!email) throw new Error("กรุณากรอกอีเมล");
+                    if(!email.includes('@') || !email.includes('.')) throw new Error("รูปแบบอีเมลไม่ถูกต้อง");
+                    
+                    if(passIn.length < 6) throw new Error("รหัสผ่านต้องมีอย่างน้อย 6 ตัวอักษร");
+                    if(passIn !== confirmPass) throw new Error("รหัสผ่านยืนยันไม่ตรงกัน");
+
+                    const usersRef = rtdb.ref('users');
+                    const nameSnap = await usersRef.orderByChild('username').equalTo(name).once('value');
+                    
+                    if(nameSnap.exists()) throw new Error("ชื่อบัญชีนี้มีผู้ใช้งานแล้ว กรุณาตั้งชื่อใหม่");
+
+                    // 2. Create User
+                    const userCredential = await auth.createUserWithEmailAndPassword(email, passIn);
+                    const user = userCredential.user;
+                    
+                    // 3. Format Date for 'createdDate'
+                    const now = new Date();
+                    const day = String(now.getDate()).padStart(2, '0');
+                    const month = String(now.getMonth() + 1).padStart(2, '0');
+                    const year = now.getFullYear();
+                    const hours = String(now.getHours()).padStart(2, '0');
+                    const minutes = String(now.getMinutes()).padStart(2, '0');
+                    const formattedDate = `${day}/${month}/${year} ${hours}:${minutes}`;
+
+                    // 4. Save to Database (รอให้เสร็จก่อนเปลี่ยนหน้า)
+                    await rtdb.ref(`users/${user.uid}`).set({
+                        createdAt: firebase.database.ServerValue.TIMESTAMP, // timestamp
+                        createdDate: formattedDate,                         // string date (DD/MM/YYYY HH:MM)
+                        email: email,
+                        points: 0,
+                        role: 'members',
+                        username: name
+                    });
+                    
+                    // 5. เปลี่ยนหน้าเองหลังจากบันทึกเสร็จ
+                    window.location.replace('index.html');
+
+                } else if (currentMode === 'reset') {
+                    // --- RESET FLOW ---
+                    const emailInput = document.getElementById('reset-email-input').value.trim();
+                    
+                    if (!emailInput || !emailInput.includes('@')) throw new Error("กรุณากรอกอีเมลให้ถูกต้อง");
+
+                    const usersRef = rtdb.ref('users');
+                    const snap = await usersRef.orderByChild('email').equalTo(emailInput).once('value');
+                    
+                    if (!snap.exists()) {
+                        throw new Error("ไม่พบอีเมลนี้ในระบบ (กรุณาตรวจสอบว่าคุณสมัครสมาชิกหรือยัง)");
+                    }
+
+                    await auth.sendPasswordResetEmail(emailInput);
+                    
+                    document.getElementById('auth-success').innerHTML = `ส่งลิงก์เปลี่ยนรหัสผ่านไปที่ <b>${emailInput}</b> เรียบร้อยแล้ว!<br>กรุณาตรวจสอบกล่องจดหมาย (Inbox) หรือในถังขยะ/สแปม (Spam/Junk)`;
+                    document.getElementById('auth-success').style.display = 'block';
+                    document.getElementById('reset-email-input').value = '';
+                }
+
+            } catch (e) {
+                isRegistering = false; // UNLOCK on error
+                let msg = e.message;
+                if(e.code === 'auth/user-not-found' || e.code === 'auth/invalid-credential' || e.code === 'auth/wrong-password') msg = "ชื่อบัญชีหรือรหัสผ่านไม่ถูกต้อง";
+                else if (e.code === 'auth/email-already-in-use') msg = "อีเมลนี้ถูกใช้งานไปแล้ว";
+                else if (e.code === 'auth/invalid-email') msg = "รูปแบบอีเมลไม่ถูกต้อง";
+                else if (e.code === 'auth/weak-password') msg = "รหัสผ่านง่ายเกินไป (ต้องมี 6 ตัวขึ้นไป)";
+                
+                showError(msg); 
+                const box = document.querySelector('.login-box');
+                box.style.animation = 'shake 0.3s';
+                setTimeout(() => box.style.animation = '', 300);
+            } finally {
+                if(!isRegistering) { // คืนค่าปุ่มเฉพาะถ้าไม่ได้กำลังจะเปลี่ยนหน้า
+                    btn.disabled = false; 
+                    if (currentMode === 'login') btn.innerText = "LOGIN NOW";
+                    else if (currentMode === 'register') btn.innerText = "CREATE ACCOUNT";
+                    else btn.innerText = "SEND RESET LINK";
+                }
+            }
+        }
+
+        function showError(msg) { 
+            const el = document.getElementById('auth-error'); 
+            el.innerText = msg; 
+            el.style.display = 'block'; 
+        }
+    </script>
+    
+    <style>
+        @keyframes shake {
+            0% { transform: translateX(0); }
+            25% { transform: translateX(-5px); }
+            50% { transform: translateX(5px); }
+            75% { transform: translateX(-5px); }
+            100% { transform: translateX(0); }
+        }
+    </style>
+</body>
+</html>
+
+

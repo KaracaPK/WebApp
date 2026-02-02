@@ -1,0 +1,742 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZENU SHOP(ADMIN)</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+
+    <!-- FontAwesome & Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Poppins:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        /* --- CSS VARIABLES (MATCHING SHOP MANAGER) --- */
+        :root {
+            --bg-body: #0f0f13;
+            --bg-card: #18181f;
+            --bg-header: rgba(15, 15, 19, 0.95);
+            --accent: #ff0000;
+            --accent-glow: rgba(255, 0, 0, 0.4);
+            --gold: #ffc107;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: #2a2a35;
+            --radius: 12px;
+            --input-bg: #0a0a0e;
+            
+            /* Status Colors */
+            --status-sold: #ff9800;
+            --status-free: #00e676;
+            --status-perm: #2979ff;
+            --status-time: #d500f9;
+            --status-wait: #ffd600;
+            --status-active: #00e676;
+            --status-expired: #ff4444;
+            --status-suspended: #444;
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        /* Layout Configuration */
+        html { scroll-behavior: smooth; }
+        
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Kanit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        /* BACKGROUND GRID (Shared Style) */
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: -1;
+        }
+
+        /* --- HEADER STYLE (EXACT MATCH WITH SHOP MANAGER) --- */
+        #header {
+            height: 70px; 
+            background: var(--bg-header); 
+            backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; 
+            position: sticky; top: 0; z-index: 100;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-family: 'Poppins'; cursor: pointer; text-decoration: none; }
+        .brand-icon { 
+            width: 38px; height: 38px; background: linear-gradient(135deg, #222, #000); 
+            border: 1px solid #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; 
+            color: var(--accent); font-weight: 900; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .brand-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #fff; } 
+        .brand-text span { color: var(--accent); }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #888;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            font-family: 'Poppins'; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            height: 38px;
+        }
+        .nav-btn:hover { border-color: #555; color: #fff; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .nav-btn.primary { border-color: rgba(255,0,0,0.3); color: var(--accent); background: rgba(255,0,0,0.05); }
+        .nav-btn.primary:hover { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 12px var(--accent-glow); }
+        .nav-btn i { font-size: 14px; }
+
+        @media (max-width: 600px) {
+            #header { padding: 0 15px; height: 60px; }
+            .brand-text { display: none; }
+            .nav-btn span { display: none; } 
+            .nav-btn { padding: 8px; width: 38px; justify-content: center; gap: 0; }
+        }
+
+        /* --- LOADING OVERLAY --- */
+        #loading-overlay { 
+            position: fixed; inset: 0; background: #000; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            transition: opacity 0.5s;
+        }
+        .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* --- MAIN CONTAINER --- */
+        .main-container {
+            width: 100%;
+            max-width: 1000px; 
+            margin: 0 auto;
+            padding: 30px 20px; 
+            display: flex; flex-direction: column; gap: 20px;
+        }
+
+        /* --- CARDS --- */
+        .card-style {
+            background: var(--bg-card); 
+            border: 1px solid var(--border);
+            border-radius: 16px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+            margin-bottom: 20px;
+        }
+
+        /* --- KEY LIST CONTAINER --- */
+        .key-list-wrapper {
+            max-height: 600px; 
+            overflow-y: auto; /* Scroll แนวตั้ง */
+            overflow-x: hidden; /* ซ่อน Scroll แนวนอนที่ Container */
+            margin-top: 15px;
+            padding: 10px; 
+            border: 1px solid #1a1a1a;
+            border-radius: 8px;
+            background: #0a0a0e;
+        }
+        
+        .key-list-wrapper::-webkit-scrollbar { width: 5px; }
+        .key-list-wrapper::-webkit-scrollbar-track { background: #111; border-radius: 4px; }
+        .key-list-wrapper::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
+        .key-list-wrapper::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        /* --- KEY LIST ITEMS (RESPONSIVE) --- */
+        .key-item {
+            background: #111; border: 1px solid var(--border); 
+            padding: 14px; margin-bottom: 8px; border-radius: 8px; 
+            display: flex; justify-content: space-between; align-items: center;
+            transition: all 0.2s; position: relative; overflow: hidden;
+            /* เอา min-width: 600px ออกเพื่อให้ยืดหดตามจอ */
+        }
+        .key-item:hover { transform: translateY(-2px); border-color: #333; background: #161616; }
+        .key-item::before { content: ''; position: absolute; top: 0; left: 0; width: 3px; height: 100%; background: #333; }
+        
+        .key-item.active-item::before { background: var(--status-free); box-shadow: 0 0 10px var(--status-free); }
+        .key-item.sold-item::before { background: var(--status-sold); }
+        .key-item.suspended-item::before { background: var(--status-suspended); }
+
+        .key-info { display: flex; flex-direction: column; gap: 4px; min-width: 0; flex: 1; }
+        
+        .key-code { 
+            font-family: 'JetBrains Mono', monospace; color: #fff; letter-spacing: 0.5px; font-size: 14px; font-weight: 700;
+            white-space: nowrap; overflow: hidden; text-overflow: ellipsis; /* ตัดคำถ้ายาวเกิน */
+        }
+        .key-code.suspended-text { color: #666; text-decoration: line-through; }
+        
+        .meta-row { display: flex; flex-wrap: wrap; gap: 8px; font-size: 10px; color: #666; align-items: center; margin-top: 4px; }
+        
+        .actions { display: flex; gap: 6px; align-items: center; }
+
+        /* Mobile Adjustments for Key Items */
+        @media (max-width: 600px) {
+            .key-item {
+                flex-direction: column; /* เรียงแนวตั้งบนมือถือ */
+                align-items: flex-start;
+                gap: 12px;
+            }
+            .key-info { width: 100%; }
+            .key-code { font-size: 13px; white-space: normal; word-break: break-all; } /* ให้คีย์ยาวๆ ขึ้นบรรทัดใหม่ได้ */
+            .actions { width: 100%; justify-content: flex-end; border-top: 1px solid #222; padding-top: 10px; }
+        }
+
+        /* --- OTHER COMPONENTS --- */
+        .status-tag { font-size: 9px; font-weight: 800; padding: 2px 6px; border-radius: 3px; text-transform: uppercase; letter-spacing: 0.5px; display: inline-flex; align-items: center; gap: 3px; }
+        .tag-free { background: rgba(0, 230, 118, 0.1); color: var(--status-free); border: 1px solid rgba(0, 230, 118, 0.2); }
+        .tag-sold { background: rgba(255, 152, 0, 0.1); color: var(--status-sold); border: 1px solid rgba(255, 152, 0, 0.2); }
+        .tag-perm { background: rgba(41, 121, 255, 0.1); color: var(--status-perm); border: 1px solid rgba(41, 121, 255, 0.2); }
+        .tag-time { background: rgba(213, 0, 249, 0.1); color: var(--status-time); border: 1px solid rgba(213, 0, 249, 0.2); }
+        .tag-wait { background: rgba(255, 214, 0, 0.1); color: var(--status-wait); border: 1px solid rgba(255, 214, 0, 0.2); }
+        .tag-active { background: rgba(0, 230, 118, 0.1); color: var(--status-active); border: 1px solid rgba(0, 230, 118, 0.2); }
+        .tag-suspended { background: #222; color: #666; border: 1px solid #333; }
+        .expire-text { color: #888; display: flex; align-items: center; gap: 5px; font-family: 'JetBrains Mono', monospace; font-size: 10px; }
+
+        .btn-action { width: 32px; height: 32px; background: #1a1a1a; color: #888; border: 1px solid transparent; border-radius: 6px; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .btn-action:hover { background: #222; color: #fff; border-color: #444; }
+        .btn-status.active { color: var(--status-sold); border-color: rgba(255, 152, 0, 0.3); background: rgba(255, 152, 0, 0.05); }
+        .btn-activate.active { color: #2979ff; border-color: rgba(41, 121, 255, 0.3); background: rgba(41, 121, 255, 0.05); }
+        .btn-suspend.active { color: #00e676; border-color: rgba(0, 230, 118, 0.3); background: rgba(0, 230, 118, 0.05); }
+        .btn-suspend.inactive { color: #666; border-color: #333; background: #111; }
+        .btn-del:hover { background: rgba(255, 0, 0, 0.1); color: #ff4444; border-color: rgba(255, 0, 0, 0.3); }
+
+        /* Generator Components */
+        .section-title { font-size: 11px; font-weight: 800; color: var(--text-muted); letter-spacing: 1px; text-transform: uppercase; margin-bottom: 8px; display: flex; align-items: center; gap: 6px; }
+        input { width: 100%; background: var(--input-bg); border: 1px solid var(--border); color: white; padding: 12px 14px; border-radius: 8px; font-family: 'JetBrains Mono', monospace; font-size: 13px; transition: all 0.3s; }
+        input:focus { border-color: var(--accent); box-shadow: 0 0 0 3px rgba(255, 0, 0, 0.15); }
+        .row { display: flex; gap: 15px; } .col { flex: 1; min-width: 0; }
+        .key-display { position: relative; margin-bottom: 15px; }
+        .key-display input { text-align: center; color: var(--accent); font-weight: 700; font-size: 18px; letter-spacing: 2px; padding: 16px; padding-right: 50px; background: linear-gradient(90deg, #0a0a0a, #1a0505); border-color: #333; }
+        .btn-random { position: absolute; right: 8px; top: 50%; transform: translateY(-50%); width: 36px; height: 36px; background: #222; border-radius: 6px; color: #888; display: flex; align-items: center; justify-content: center; cursor: pointer; transition: 0.2s; }
+        .btn-random:hover { background: #333; color: white; }
+        
+        .selector-container { background: #000; border: 1px solid var(--border); border-radius: 12px; padding: 6px; display: grid; grid-template-columns: repeat(auto-fit, minmax(80px, 1fr)); gap: 6px; }
+        .preset-btn { background: transparent; color: #555; border: none; padding: 12px; border-radius: 8px; cursor: pointer; transition: 0.2s; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 2px; }
+        .preset-btn .val { font-family: 'JetBrains Mono', monospace; font-weight: 800; font-size: 14px; color: #777; transition: 0.2s; }
+        .preset-btn .lbl { font-size: 10px; text-transform: uppercase; font-weight: 600; opacity: 0.5; }
+        .preset-btn.active { background: #222; box-shadow: 0 4px 10px rgba(0,0,0,0.5); }
+        .preset-btn.active .val { color: var(--accent); }
+        .preset-btn.active .lbl { color: #fff; opacity: 1; }
+        .custom-box { background: #0d0d0d; border: 1px dashed #333; padding: 15px; border-radius: 12px; margin-top: 15px; display: none; }
+        .unit-selector { display: flex; background: #000; border: 1px solid var(--border); border-radius: 8px; padding: 2px; gap: 2px; margin-top: 5px; }
+        .unit-btn { flex: 1; background: transparent; color: #555; border: none; padding: 8px 0; font-size: 10px; font-weight: 700; text-transform: uppercase; border-radius: 6px; cursor: pointer; }
+        .unit-btn.active { background: #222; color: #fff; box-shadow: 0 1px 3px rgba(0,0,0,0.5); }
+
+        .btn-primary { width: 100%; background: linear-gradient(135deg, #ff0000, #cc0000); color: white; padding: 16px; font-weight: 800; font-size: 14px; text-transform: uppercase; letter-spacing: 1px; border-radius: 10px; border: none; margin-top: 20px; display: flex; align-items: center; justify-content: center; gap: 10px; cursor: pointer; transition: all 0.3s; box-shadow: 0 5px 20px rgba(255, 0, 0, 0.2); font-family: 'Poppins'; }
+        .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 8px 30px rgba(255, 0, 0, 0.4); background: linear-gradient(135deg, #ff1a1a, #e60000); }
+        .btn-primary:disabled { opacity: 0.6; cursor: not-allowed; }
+
+        .list-header { display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 15px; padding-bottom: 15px; border-bottom: 1px solid var(--border); }
+        .page-title { font-size: 20px; font-weight: 900; letter-spacing: -0.5px; margin: 0; color: #fff; }
+        .page-subtitle { font-size: 12px; color: var(--text-muted); margin-top: 4px; }
+        .btn-danger-outline { background: rgba(255, 0, 0, 0.05); border: 1px solid rgba(255, 0, 0, 0.3); color: #ff4444; font-size: 11px; padding: 8px 14px; font-weight: 700; border-radius: 8px; cursor: pointer; transition: 0.2s; white-space: nowrap; font-family: 'Poppins'; }
+        .btn-danger-outline:hover { background: #ff0000; color: #fff; }
+
+        .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 15px; align-items: center; background: rgba(20, 20, 25, 0.4); border: 1px solid var(--border); padding: 8px; border-radius: 12px; }
+        .filter-group { display: flex; gap: 6px; overflow-x: auto; padding-bottom: 2px; width: 100%; }
+        .filter-group::-webkit-scrollbar { display: none; }
+        .filter-btn { background: transparent; border: none; color: #666; padding: 8px 14px; font-size: 11px; font-weight: 600; cursor: pointer; border-radius: 6px; white-space: nowrap; transition: 0.2s; flex-shrink: 0; border: 1px solid transparent; }
+        .filter-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .filter-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(255,0,0,0.3); border-color: var(--accent); }
+
+        .search-container { position: relative; margin-bottom: 10px; }
+        .search-container input { padding-right: 40px; background: rgba(255,255,255,0.03); border-color: var(--border); }
+        .search-container i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #666; pointer-events: none; }
+
+        .status-msg { text-align: center; font-size: 12px; margin-top: 15px; height: 20px; font-weight: 700; opacity: 0; transition: opacity 0.3s; }
+        .text-green { color: #00e676; } .text-red { color: #ff4444; }
+        .anim-slide-out { animation: slideOutRight 0.5s forwards ease-in-out; pointer-events: none; }
+        
+        @media (max-width: 768px) {
+            .main-container { padding: 15px; gap: 15px; }
+            .row { flex-direction: row; gap: 10px; }
+            .key-display input { font-size: 15px; padding: 14px; }
+            .page-title { font-size: 18px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+
+    <div id="flash-overlay" class="anim-red-flash"></div>
+
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div style="color:#fff; font-weight:bold; letter-spacing:1px; font-size:12px;">VERIFYING PERMISSIONS...</div>
+    </div>
+
+    <!-- HEADER (EXACT STYLE) -->
+    <div id="header">
+        <div class="brand" onclick="window.location.href='index.html'">
+            <div class="brand-icon">Z</div>
+            <div class="brand-text">ZENU <span>KEYS</span></div>
+        </div>
+        <div class="header-right">
+            <button class="nav-btn primary" onclick="window.location.href='Shop_Manager.html'">
+                <i class="fa-solid fa-users-gear"></i> <span>ADMIN DASHBOARD</span>
+            </button>
+            <button class="nav-btn" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-arrow-left"></i> <span>BACK TO SHOP</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="main-container">
+        
+        <!-- SECTION 1: GENERATOR -->
+        <div class="card-style">
+            <div class="section-title"><i class="fa-solid fa-wand-magic-sparkles"></i> Key Generator</div>
+            
+            <div class="key-display">
+                <input type="text" id="keyInput" placeholder="Generating..." readonly>
+                <div class="btn-random" onclick="generateRandomKey()" title="Shuffle"><i class="fa-solid fa-dice"></i></div>
+            </div>
+
+            <div class="row">
+                <div class="col"><div class="section-title">Prefix</div><input type="text" id="prefixInput" value="ZENU-HUB-"></div>
+                <div class="col"><div class="section-title">Length</div><input type="number" id="lengthInput" value="20"></div>
+            </div>
+
+            <div style="margin-top: 20px;">
+                <div class="section-title"><i class="fa-regular fa-clock"></i> Duration Presets</div>
+                <div class="selector-container" id="durationGrid">
+                    <div class="preset-btn" onclick="selectDuration('1h', this)"><span class="val">1h</span><span class="lbl">Hour</span></div>
+                    <div class="preset-btn" onclick="selectDuration('6h', this)"><span class="val">6h</span><span class="lbl">Hours</span></div>
+                    <div class="preset-btn" onclick="selectDuration('12h', this)"><span class="val">12h</span><span class="lbl">Hours</span></div>
+                    <div class="preset-btn" onclick="selectDuration('24h', this)"><span class="val">24h</span><span class="lbl">Day</span></div>
+                    <div class="preset-btn" onclick="selectDuration('3d', this)"><span class="val">3d</span><span class="lbl">Days</span></div>
+                    <div class="preset-btn" onclick="selectDuration('7d', this)"><span class="val">7d</span><span class="lbl">Week</span></div>
+                    <div class="preset-btn" onclick="selectDuration('30d', this)"><span class="val">30d</span><span class="lbl">Month</span></div>
+                    <div class="preset-btn active" onclick="selectDuration('permanent', this)"><span class="val">∞</span><span class="lbl">Perm</span></div>
+                    <div class="preset-btn" onclick="selectDuration('custom', this)"><span class="val"><i class="fa-solid fa-sliders"></i></span><span class="lbl">Custom</span></div>
+                </div>
+
+                <div id="customDurationBox" class="custom-box">
+                    <div class="row" style="align-items: center;">
+                        <div class="col" style="flex: 0.5;">
+                            <div class="section-title" style="font-size:9px;">Value</div>
+                            <input type="number" id="customAmount" value="1" min="1" step="1" placeholder="1">
+                        </div>
+                        <div class="col" style="flex: 1;">
+                            <div class="section-title" style="font-size:9px;">Unit</div>
+                            <div class="unit-selector">
+                                <button class="unit-btn" onclick="selectCustomUnit('minutes', this)">Mins</button>
+                                <button class="unit-btn active" onclick="selectCustomUnit('hours', this)">Hours</button>
+                                <button class="unit-btn" onclick="selectCustomUnit('days', this)">Days</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <button onclick="addKeyToDB()" id="addBtn" class="btn-primary">
+                <i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEY
+            </button>
+            <div id="status-msg" class="status-msg"></div>
+        </div>
+
+        <!-- SECTION 2: KEY LIST -->
+        <div class="card-style">
+            <div class="list-header">
+                <div>
+                    <h1 class="page-title"><i class="fa-solid fa-database"></i> KEY DATABASE</h1>
+                    <p class="page-subtitle">Total Keys: <span id="key-count" style="color: #fff; font-weight:bold;">0</span></p>
+                </div>
+                <button onclick="deleteAllKeys()" class="btn-danger-outline" title="Delete only unsold/inactive keys">
+                    <i class="fa-solid fa-trash-can"></i> CLEAR UNUSED
+                </button>
+            </div>
+            
+            <div class="toolbar">
+                <div class="filter-group">
+                    <button class="filter-btn active" onclick="setKeyFilter('all')">ทั้งหมด</button>
+                    <button class="filter-btn" onclick="setKeyFilter('hourly')">รายชั่วโมง</button>
+                    <button class="filter-btn" onclick="setKeyFilter('daily')">รายวัน</button>
+                    <button class="filter-btn" onclick="setKeyFilter('weekly')">รายสัปดาห์</button>
+                    <button class="filter-btn" onclick="setKeyFilter('monthly')">รายเดือน</button>
+                    <button class="filter-btn" onclick="setKeyFilter('permanent')">ถาวร</button>
+                </div>
+            </div>
+
+            <div class="search-container">
+                <input type="text" id="search-keys" placeholder="Search Keys / Status / Duration" onkeyup="filterKeys()">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+
+            <!-- KEY LIST CONTAINER -->
+            <div id="key-list-container" class="key-list-wrapper"></div>
+        </div>
+
+    </div>
+    <script src="API.js"></script>
+    <script>
+        const firebaseConfig = window.getSecureConfig();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const db = firebase.database();
+        const keysRef = db.ref('Keys');
+
+        let allKeysCache = []; 
+        let currentKeyFilter = 'all';
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                try {
+                    const snap = await db.ref(`users/${user.uid}/role`).once('value');
+                    const role = (snap.val() || 'members').toLowerCase();
+                    if (role === 'admin') {
+                        document.getElementById('loading-overlay').style.opacity = '0';
+                        setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 500);
+                        loadKeys(); 
+                    } else {
+                        alert("ACCESS DENIED: Admins only.");
+                        window.location.href = 'index.html';
+                    }
+                } catch (e) {
+                    window.location.href = 'index.html';
+                }
+            } else {
+                window.location.href = 'Login.html';
+            }
+        });
+
+        function loadKeys() {
+            keysRef.on('value', (snapshot) => {
+                const data = snapshot.val();
+                if (!data) {
+                    allKeysCache = [];
+                    renderKeyList([]);
+                    return;
+                }
+                allKeysCache = Object.entries(data).map(([key, value]) => ({ key, ...value })).reverse();
+                filterKeys(); 
+            });
+        }
+
+        function normalizeDuration(label) {
+            if (!label) return 'unknown';
+            let l = String(label).toUpperCase().replace(/\s/g, ''); 
+            if(l.includes('1H') || l.includes('6H') || l.includes('12H')) return 'hourly'; 
+            if(l.includes('24H') || l.includes('1DAY') || l.includes('3D')) return 'daily'; 
+            if(l.includes('7D') || l.includes('1WEEK')) return 'weekly'; 
+            if(l.includes('30D') || l.includes('1MON')) return 'monthly'; 
+            if(l.includes('LIFE') || l.includes('PERM')) return 'permanent'; 
+            return 'other'; 
+        }
+
+        window.setKeyFilter = function(type) {
+            currentKeyFilter = type;
+            document.querySelectorAll('.filter-btn').forEach(btn => btn.classList.remove('active'));
+            event.target.classList.add('active');
+            filterKeys();
+        }
+
+        function filterKeys() {
+            const term = document.getElementById('search-keys').value.toLowerCase().trim();
+            const list = allKeysCache.filter(item => {
+                const k = item.key.toLowerCase();
+                const d = (item.duration_label || '').toLowerCase();
+                const category = normalizeDuration(item.duration_label);
+
+                if (currentKeyFilter !== 'all' && category !== currentKeyFilter) return false;
+                if (!term) return true;
+                if (k.includes(term) || d.includes(term)) return true;
+                
+                if (term === 'sold' && item.is_sold) return true;
+                if (term === 'free' && !item.is_sold) return true;
+                if (term === 'active' && item.activated) return true;
+                if (term === 'wait' && !item.activated) return true;
+
+                const aliases = { '1d': ['24 hour'], 'perm': ['permanent', 'life'] };
+                if (aliases[term] && aliases[term].some(a => d.includes(a))) return true;
+
+                return false;
+            });
+            renderKeyList(list);
+        }
+
+        function renderKeyList(keys) {
+            const container = document.getElementById('key-list-container');
+            const countEl = document.getElementById('key-count');
+            countEl.innerText = keys.length;
+
+            if (keys.length === 0) {
+                container.innerHTML = '<div style="text-align: center; color: #333; padding: 40px;"><i class="fa-solid fa-box-open" style="font-size:30px;"></i><br><br>NO KEYS FOUND</div>';
+                return;
+            }
+
+            const fragment = document.createDocumentFragment();
+
+            keys.forEach(item => {
+                const isSold = item.is_sold === true;
+                const isActivated = item.activated === true; 
+                const isActiveInStock = item.active !== false; 
+                
+                let typeHtml = '';
+                let timerHtml = '';
+                let label = (item.duration_label || 'PERMANENT').toUpperCase();
+                let isPerm = label.includes('PERM') || label.includes('LIFE');
+
+                const soldHtml = isSold ? `<span class="status-tag tag-sold"><i class="fa-solid fa-check"></i> SOLD</span>` : `<span class="status-tag tag-free">FREE</span>`;
+
+                let mainClass = "key-item active-item";
+                if (!isActiveInStock) {
+                    mainClass = "key-item suspended-item";
+                    timerHtml = `<span class="status-tag tag-suspended"><i class="fa-solid fa-ban"></i> SUSPENDED</span>`;
+                } else if (isPerm) {
+                    typeHtml = `<span class="status-tag tag-perm">PERM</span>`;
+                    timerHtml = `<span class="expire-text"><i class="fa-solid fa-infinity"></i> Lifetime</span>`;
+                } else {
+                    typeHtml = `<span class="status-tag tag-time">${label}</span>`;
+                    if (isActivated) {
+                         timerHtml = `<span class="status-tag tag-active"><i class="fa-solid fa-bolt"></i> ACTIVE</span> <span class="expire-text" data-expire-time="${item.expires_at}" data-key-id="${item.key}">...</span>`;
+                    } else {
+                         timerHtml = `<span class="status-tag tag-wait"><i class="fa-solid fa-hourglass"></i> WAITING</span>`;
+                    }
+                }
+                
+                if (isSold) mainClass = "key-item sold-item";
+
+                const div = document.createElement('div');
+                div.className = mainClass;
+                div.id = `key-row-${item.key}`;
+                div.innerHTML = `
+                    <div class="key-info">
+                        <div class="key-code ${!isActiveInStock ? 'suspended-text' : ''}">${item.key}</div>
+                        <div class="meta-row">${soldHtml} ${typeHtml} ${timerHtml}</div>
+                    </div>
+                    <div class="actions">
+                        <div onclick="toggleSoldStatus('${item.key}', ${isSold})" class="btn-action btn-status ${isSold?'active':''}" title="Toggle Sold Status">
+                            <i class="fa-solid fa-dollar-sign"></i>
+                        </div>
+                        <div onclick="toggleActivateStatus('${item.key}', ${isActivated}, '${label}')" class="btn-action btn-activate ${isActivated?'active':''}" title="Toggle Activated (User Usage)">
+                            <i class="fa-solid fa-bolt"></i>
+                        </div>
+                        <div onclick="toggleSuspendStatus('${item.key}')" class="btn-action btn-suspend ${isActiveInStock?'active':'inactive'}" title="Toggle Suspend/Pause">
+                            <i class="fa-solid fa-person-running"></i>
+                        </div>
+                        <div onclick="copyKey('${item.key}')" class="btn-action"><i class="fa-regular fa-copy"></i></div>
+                        <div onclick="deleteKey('${item.key}', this)" class="btn-action btn-del"><i class="fa-solid fa-trash-can"></i></div>
+                    </div>`;
+                fragment.appendChild(div);
+            });
+
+            container.innerHTML = "";
+            container.appendChild(fragment);
+        }
+
+        let selectedDuration = 'permanent';
+        let customUnit = 'hours';
+
+        function generateRandomKey() {
+            const prefix = document.getElementById('prefixInput').value;
+            const length = parseInt(document.getElementById('lengthInput').value) || 12;
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            const input = document.getElementById('keyInput');
+            let iterations = 0;
+            const interval = setInterval(() => {
+                let result = "";
+                for (let i = 0; i < length; i++) result += chars.charAt(Math.floor(Math.random() * chars.length));
+                input.value = prefix + result;
+                iterations++;
+                if(iterations > 10) { clearInterval(interval); }
+            }, 30);
+        }
+        generateRandomKey();
+
+        window.selectDuration = function(value, el) {
+            selectedDuration = value;
+            document.querySelectorAll('.preset-btn').forEach(btn => btn.classList.remove('active'));
+            el.classList.add('active');
+            const box = document.getElementById('customDurationBox');
+            if (value === 'custom') { box.style.display = 'block'; document.getElementById('customAmount').focus(); } else { box.style.display = 'none'; }
+        }
+
+        window.selectCustomUnit = function(unit, el) {
+            customUnit = unit;
+            document.querySelectorAll('.unit-btn').forEach(b => b.classList.remove('active'));
+            el.classList.add('active');
+        }
+
+        function parseDurationToMs(label) {
+            if (!label || label.includes('PERM') || label.includes('LIFE')) return null;
+            const parts = label.split(' ');
+            if (parts.length < 2) return null;
+            const amount = parseInt(parts[0]);
+            const unit = parts[1].toUpperCase();
+            let multiplier = 0;
+            if (unit.startsWith('MIN')) multiplier = 60 * 1000;
+            else if (unit.startsWith('HOUR')) multiplier = 60 * 60 * 1000;
+            else if (unit.startsWith('DAY')) multiplier = 24 * 60 * 60 * 1000;
+            else if (unit.startsWith('WEEK')) multiplier = 7 * 24 * 60 * 60 * 1000;
+            else if (unit.startsWith('MONTH')) multiplier = 30 * 24 * 60 * 60 * 1000;
+            return amount * multiplier;
+        }
+
+        window.addKeyToDB = function() {
+            const key = document.getElementById('keyInput').value.trim();
+            const btn = document.getElementById('addBtn');
+            if (!key) return;
+            
+            btn.disabled = true;
+            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> UPLOADING...';
+            
+            let durationLabel = "LIFETIME";
+
+            if (selectedDuration !== 'permanent') {
+                if (selectedDuration === 'custom') {
+                    let amount = parseInt(document.getElementById('customAmount').value);
+                    if (isNaN(amount) || amount < 1) { amount = 1; }
+                    const unit = customUnit; 
+                    durationLabel = `${amount} ${unit.toUpperCase()}`;
+                } else {
+                    const map = { '1h': '1 HOUR', '6h': '6 HOURS', '12h': '12 HOURS', '24h': '24 HOURS', '3d': '3 DAYS', '7d': '1 WEEK', '30d': '1 MONTH' };
+                    if(map[selectedDuration]) { durationLabel = map[selectedDuration]; }
+                }
+            }
+
+            keysRef.child(key).set({ 
+                active: true, 
+                is_sold: false, 
+                expires_at: null, 
+                activated: false,
+                duration_label: durationLabel, 
+                created_at: firebase.database.ServerValue.TIMESTAMP 
+            }).then(() => { 
+                showStatus("✅ KEY UPLOADED", "text-green"); 
+                btn.classList.add('anim-success-pulse');
+                setTimeout(() => btn.classList.remove('anim-success-pulse'), 600);
+                generateRandomKey(); 
+            }).catch((e) => { showStatus("❌ ERROR: " + e.code, "text-red"); })
+            .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEY'; });
+        }
+
+        window.toggleSoldStatus = function(keyStr, currentStatus) { 
+            keysRef.child(keyStr).update({ is_sold: !currentStatus }); 
+        }
+        
+        window.toggleActivateStatus = function(keyStr, currentStatus, durationLabel) {
+            let updates = {};
+            if (!currentStatus) {
+                const ms = parseDurationToMs(durationLabel);
+                updates.activated = true;
+                if (ms) updates.expires_at = Date.now() + ms;
+                else updates.expires_at = null;
+            } else {
+                updates.activated = false;
+                updates.expires_at = null;
+            }
+            keysRef.child(keyStr).update(updates);
+        }
+
+        window.toggleSuspendStatus = function(keyStr) {
+            const keyData = allKeysCache.find(k => k.key === keyStr);
+            if (!keyData) return;
+            const currentActive = keyData.active !== false;
+            const updates = {};
+
+            if (currentActive) {
+                updates.active = false;
+                if (keyData.activated && keyData.expires_at) {
+                    const now = Date.now();
+                    const remaining = keyData.expires_at - now;
+                    if (remaining > 0) {
+                        updates.paused_remaining = remaining;
+                        updates.expires_at = null;
+                    }
+                }
+            } else {
+                updates.active = true;
+                if (keyData.paused_remaining) {
+                    updates.expires_at = Date.now() + keyData.paused_remaining;
+                    updates.paused_remaining = null;
+                }
+            }
+            keysRef.child(keyStr).update(updates);
+        }
+
+        window.copyKey = function(key) { navigator.clipboard.writeText(key).then(()=>showStatus('COPIED','text-green')); }
+
+        window.deleteKey = function(keyStr, el) {
+            if(!confirm("Delete this key?")) return;
+            const row = el ? el.closest('.key-item') : null;
+            if (row) {
+                row.classList.add('anim-slide-out');
+                setTimeout(() => keysRef.child(keyStr).remove(), 500); 
+            } else { keysRef.child(keyStr).remove(); }
+        }
+
+        window.deleteAllKeys = async function() { 
+            if(!confirm("⚠️ WARNING: CLEAR UNUSED KEYS?\n\nThis will keep keys that are:\n1. SOLD to users\n2. ACTIVATED/RUNNING")) return;
+            
+            try {
+                const snap = await keysRef.once('value');
+                const keys = snap.val();
+                if(!keys) return alert("No keys to delete.");
+
+                let updates = {};
+                let count = 0;
+
+                Object.keys(keys).forEach(k => {
+                    const item = keys[k];
+                    if (item.is_sold === true || item.activated === true) {
+                    } else {
+                        updates[k] = null;
+                        count++;
+                    }
+                });
+
+                if (count > 0) {
+                    await keysRef.update(updates);
+                    showStatus(`🗑️ DELETED ${count} UNUSED KEYS`, 'text-green');
+                } else {
+                    alert("No unused keys found to delete.");
+                }
+            } catch(e) { console.error(e); alert("Error: " + e.message); }
+        }
+
+        function showStatus(msg, cls) {
+            const el = document.getElementById('status-msg');
+            el.innerText = msg; el.className = `status-msg ${cls}`; el.style.opacity = '1';
+            setTimeout(() => el.style.opacity = '0', 3000);
+        }
+
+        setInterval(() => {
+            const now = Date.now();
+            document.querySelectorAll('[data-expire-time]').forEach(el => {
+                const expiresAt = parseInt(el.getAttribute('data-expire-time'));
+                if(!expiresAt) return;
+                const diff = expiresAt - now;
+                if (diff <= 0) { 
+                    el.innerHTML = '<span style="color:#ff4444; font-weight:bold;">EXPIRED (DELETING...)</span>'; 
+                    const keyId = el.getAttribute('data-key-id');
+                    if (keyId && !el.hasAttribute('data-deleting')) {
+                        el.setAttribute('data-deleting', 'true');
+                        keysRef.child(keyId).remove();
+                    }
+                    return; 
+                }
+                const d = Math.floor(diff / 86400000);
+                const h = Math.floor((diff % 86400000) / 3600000);
+                const m = Math.floor((diff % 3600000) / 60000);
+                const s = Math.floor((diff % 60000) / 1000);
+                let text = "";
+                if (d > 0) text += `<span style="color:#fff">${d}d</span> `;
+                text += `${h.toString().padStart(2,'0')}h ${m.toString().padStart(2,'0')}m <span style="color:var(--accent); font-weight:bold">${s.toString().padStart(2,'0')}s</span>`;
+                if (diff < 3600000) el.classList.add('expire-warning');
+                el.innerHTML = `<i class="fa-solid fa-clock"></i> ${text}`;
+            });
+        }, 1000);
+    </script>
+</body>
+</html>
+
+

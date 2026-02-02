@@ -1,0 +1,1120 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZENU SHOP</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+    <link rel="icon" href="Image/Z.png" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Poppins:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root { 
+            --bg-body: #0f0f13; 
+            --bg-card: #18181f; 
+            --bg-header: rgba(15, 15, 19, 0.95); 
+            --accent: #ff0000; 
+            --accent-glow: rgba(255, 0, 0, 0.4); 
+            --gold: #ffc107; 
+            --text-main: #ffffff; 
+            --text-muted: #a0a0a0; 
+            --border: #2a2a35; 
+            --radius: 16px; 
+            --status-ready: #ff9800;
+            --status-active: #00e676;
+            --status-expired: #ff4444;
+            --status-suspended: #444;
+            --blue-action: #2196f3;
+        }
+
+        /* Loading Skeleton Animation */
+        @keyframes shimmer {
+            0% { background-position: -200% 0; }
+            100% { background-position: 200% 0; }
+        }
+        .skeleton {
+            background: linear-gradient(90deg, #1f1f25 25%, #2a2a35 50%, #1f1f25 75%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+            border-radius: 6px;
+        }
+        .skeleton-text { height: 14px; margin-bottom: 6px; }
+        .skeleton-icon { width: 56px; height: 56px; border-radius: 14px; flex-shrink: 0; }
+        .skeleton-btn { height: 35px; width: 100px; border-radius: 8px; }
+
+        /* Fix Overflow Issue */
+        body { 
+            margin: 0; padding: 0; 
+            background-color: var(--bg-body); 
+            color: var(--text-main); 
+            font-family: 'Kanit', sans-serif; 
+            min-height: 100vh; 
+            display: flex; 
+            flex-direction: column;
+            overflow-x: hidden; 
+            width: 100%;
+        }
+        
+        .bg-grid { position: fixed; inset: 0; background-image: linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px), linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px); background-size: 40px 40px; z-index: -1; }
+        
+        /* HEADER */
+        #header {
+            width: 100%; height: 80px;
+            background: var(--bg-header); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; position: sticky; top: 0; z-index: 100;
+            box-sizing: border-box; 
+        }
+        .brand { display: flex; align-items: center; gap: 14px; font-family: 'Poppins'; cursor: pointer; text-decoration: none; }
+        .brand-icon { 
+            width: 44px; height: 44px; background: linear-gradient(135deg, #222, #000); 
+            border: 1px solid #333; border-radius: 12px; display: flex; align-items: center; justify-content: center; 
+            color: var(--accent); font-weight: 900; font-size: 24px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .brand-text { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #fff; } 
+        .brand-text span { color: var(--accent); }
+
+        .header-right { display: flex; align-items: center; gap: 12px; }
+        
+        .nav-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #ccc;
+            padding: 10px 20px; border-radius: 10px; cursor: pointer; transition: 0.2s;
+            font-family: 'Poppins'; font-size: 13px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            height: 44px; text-decoration: none; white-space: nowrap;
+        }
+        .nav-btn:hover { border-color: #666; color: #fff; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .nav-btn.primary { border-color: rgba(255,0,0,0.3); color: var(--accent); background: rgba(255,0,0,0.05); }
+        .nav-btn.primary:hover { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 12px var(--accent-glow); }
+        
+        .points-badge { 
+            background: rgba(255,193,7,0.1); border: 1px solid rgba(255,193,7,0.3); color: var(--gold); 
+            padding: 0 20px; height: 44px; border-radius: 22px; font-weight: 700; cursor: pointer; 
+            display: flex; align-items: center; gap: 8px; transition: 0.2s; font-size: 14px; white-space: nowrap;
+        }
+        .points-badge:hover { background: rgba(255,193,7,0.2); transform: scale(1.05); }
+
+        @media (max-width: 600px) {
+            #header { padding: 0 15px; height: 70px; }
+            .brand-text { display: block; font-size: 18px; }
+            .brand { gap: 8px; }
+            .brand-icon { width: 36px; height: 36px; font-size: 20px; }
+            .nav-btn span { display: none; }
+            .nav-btn { padding: 0; width: 40px; justify-content: center; gap: 0; }
+            .points-badge { padding: 0 10px; font-size: 12px; height: 36px; }
+            .points-badge span.label { display: inline-block !important; }
+            .points-badge i { font-size: 12px; }
+        }
+
+        /* HERO */
+        .hero { text-align: center; padding: 50px 20px 30px; } 
+        .hero h1 { font-size: 32px; font-weight: 900; margin: 0 0 10px; color: #fff; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
+        .hero p { color: var(--text-muted); font-size: 14px; margin: 0; font-weight: 300; }
+        
+        @media (min-width: 768px) {
+            .hero h1 { font-size: 42px; }
+            .hero p { font-size: 15px; }
+        }
+
+        /* CONTAINER */
+        .container { 
+            max-width: 1200px; margin: 0 auto; width: 100%; 
+            padding: 0 24px 60px; 
+            box-sizing: border-box; 
+        }
+
+        /* TOOLBAR */
+        .toolbar {
+            display: flex; flex-wrap: wrap; gap: 15px; margin-bottom: 30px; 
+            align-items: center; justify-content: space-between;
+            background: rgba(20, 20, 25, 0.6); border: 1px solid var(--border);
+            padding: 12px; border-radius: 16px; backdrop-filter: blur(5px);
+            width: 100%; box-sizing: border-box;
+        }
+        .filter-group { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 2px; max-width: 100%; }
+        .filter-group::-webkit-scrollbar { display: none; }
+        
+        .filter-btn {
+            background: transparent; border: none; color: #888; padding: 10px 18px;
+            font-size: 14px; font-weight: 600; cursor: pointer; border-radius: 8px; white-space: nowrap; transition: 0.2s; flex-shrink: 0;
+        }
+        .filter-btn:hover { color: #fff; background: rgba(255,255,255,0.05); }
+        .filter-btn.active { background: var(--accent); color: #fff; box-shadow: 0 4px 10px rgba(255,0,0,0.3); }
+
+        .search-box { position: relative; width: 260px; max-width: 100%; }
+        .search-box input {
+            width: 100%; background: #0a0a0c; border: 1px solid var(--border);
+            color: #fff; padding: 12px 40px 12px 16px; border-radius: 10px;
+            font-family: 'Kanit'; font-size: 14px; outline: none; transition: 0.2s;
+            box-sizing: border-box;
+        }
+        .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,0,0,0.1); }
+        .search-box i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
+
+        /* PRODUCT GRID */
+        .shop-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); 
+            gap: 20px; 
+            width: 100%;
+        }
+
+        .product-card { 
+            background: var(--bg-card); border: 1px solid var(--border); border-radius: var(--radius); 
+            padding: 20px; display: flex; flex-direction: column; gap: 16px; position: relative; overflow: hidden;
+            transition: transform 0.2s, border-color 0.2s, box-shadow 0.2s;
+            height: 100%; box-sizing: border-box;
+        }
+        .product-card:hover { transform: translateY(-5px); border-color: #444; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
+        
+        .ribbon { 
+            position: absolute; top: 12px; right: -30px; background: var(--gold); color: #000; 
+            font-size: 10px; font-weight: 800; padding: 4px 35px; transform: rotate(45deg); z-index: 1; 
+            box-shadow: 0 2px 8px rgba(0,0,0,0.3); letter-spacing: 0.5px;
+        }
+
+        .card-top { display: flex; align-items: flex-start; gap: 15px; }
+        .card-icon { 
+            width: 56px; height: 56px; background: #131318; border-radius: 14px; 
+            display: flex; align-items: center; justify-content: center; 
+            font-size: 28px; color: #fff; border: 1px solid #2a2a35; flex-shrink: 0;
+            box-shadow: inset 0 0 10px rgba(0,0,0,0.5);
+        }
+        .card-details { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 4px; }
+        .card-title { margin: 0; font-size: 16px; font-weight: 700; color: #fff; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; line-height: 1.3; }
+        .card-dur { font-size: 12px; color: #888; display: flex; align-items: center; gap: 6px; }
+        
+        .stock-indicator {
+            font-size: 10px; font-weight: 700; padding: 4px 8px; border-radius: 6px; margin-top: 6px; 
+            display: inline-flex; align-items: center; gap: 5px; width: fit-content;
+        }
+        .stock-in { color: #00e676; background: rgba(0, 230, 118, 0.08); border: 1px solid rgba(0, 230, 118, 0.1); }
+        .stock-out { color: #ff4444; background: rgba(255, 68, 68, 0.08); border: 1px solid rgba(255, 68, 68, 0.1); }
+        .stock-dot { width: 6px; height: 6px; border-radius: 50%; background: currentColor; }
+
+        .card-bottom { margin-top: auto; display: flex; align-items: center; justify-content: space-between; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 16px; }
+        .price-area { display: flex; flex-direction: column; gap: 2px; }
+        .price-label { font-size: 10px; color: #666; text-transform: uppercase; font-weight: 800; letter-spacing: 0.5px; }
+        .price-val { font-size: 18px; font-weight: 800; color: var(--gold); font-family: 'Poppins'; line-height: 1; }
+        
+        .btn-buy { 
+            background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; 
+            font-size: 13px; font-weight: 700; cursor: pointer; transition: 0.2s; display: flex; align-items: center; gap: 8px;
+        }
+        .btn-buy:hover:not(:disabled) { box-shadow: 0 4px 15px var(--accent-glow); transform: translateY(-2px); }
+        .btn-buy:disabled { background: #2a2a2a; color: #555; cursor: not-allowed; opacity: 1; border: 1px solid #333; }
+
+        /* MODALS */
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; display: flex; align-items: center; justify-content: center; padding: 20px; box-sizing: border-box; visibility: hidden; opacity: 0; transition: 0.3s; }
+        .modal-overlay.active { visibility: visible; opacity: 1; }
+        
+        .modal-box { 
+            background: #18181f; border: 1px solid #333; 
+            padding: 25px; border-radius: 20px; 
+            width: 100%; max-width: 420px; 
+            position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); 
+            box-sizing: border-box; 
+            max-height: 85vh; 
+            display: flex; flex-direction: column; 
+            transform: translateY(20px); transition: 0.3s; 
+        }
+        .modal-overlay.active .modal-box { transform: translateY(0); }
+        
+        .btn-full { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; margin-top: 12px; background: var(--accent); color: white; font-size: 14px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-full:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-cancel { background: rgba(255,255,255,0.05); color: #888; margin-top: 8px; border: 1px solid transparent; flex-shrink: 0; }
+        .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        /* INVENTORY */
+        .inventory-list { 
+            margin-top: 15px; 
+            padding-bottom: 10px; 
+            flex: 1; 
+            overflow-y: auto; 
+            padding-right: 5px; 
+            min-height: 100px;
+        }
+        .inventory-list::-webkit-scrollbar { width: 4px; }
+        .inventory-list::-webkit-scrollbar-track { background: rgba(255,255,255,0.02); border-radius: 2px; }
+        .inventory-list::-webkit-scrollbar-thumb { background: #333; border-radius: 2px; }
+        .inventory-list::-webkit-scrollbar-thumb:hover { background: #555; }
+
+        .inv-card {
+            background: linear-gradient(145deg, #1d1d26, #14141a);
+            border: 1px solid #2a2a35; border-radius: 14px; margin-bottom: 15px;
+            padding: 16px; transition: 0.3s; position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        .inv-card:hover { transform: translateY(-3px); border-color: #3a3a45; box-shadow: 0 8px 25px rgba(0,0,0,0.4); }
+        
+        .inv-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+        .inv-title { font-size: 14px; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 8px; }
+        .inv-title i { color: var(--accent); }
+        
+        .inv-key-box {
+            background: #09090c; border: 1px solid #222; border-radius: 8px;
+            padding: 12px; display: flex; justify-content: space-between; align-items: center;
+            margin-bottom: 12px; gap: 10px;
+        }
+        .inv-key-text { font-family: 'JetBrains Mono', monospace; font-size: 13px; color: #fff; letter-spacing: 0.5px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; flex: 1; }
+        .inv-key-text.suspended { color: #666; text-decoration: line-through; }
+        
+        .inv-action-btn {
+            background: rgba(255, 255, 255, 0.05); border: 1px solid rgba(255, 255, 255, 0.1);
+            color: #ddd; padding: 8px 12px; border-radius: 8px; cursor: pointer;
+            font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s ease; font-family: 'Kanit';
+        }
+        .inv-action-btn:hover { background: rgba(255, 255, 255, 0.1); color: #fff; transform: translateY(-1px); }
+        .inv-action-btn.copy { background: rgba(255, 255, 255, 0.05); }
+        .inv-action-btn.activate { background: rgba(33, 150, 243, 0.15); border-color: rgba(33, 150, 243, 0.3); color: #4fc3f7; }
+        .inv-action-btn.activate:hover { background: #2196f3; color: white; border-color: #2196f3; }
+
+        .inv-footer { display: flex; justify-content: space-between; align-items: center; border-top: 1px solid rgba(255,255,255,0.03); padding-top: 12px; }
+        .inv-countdown-wrap { display: flex; flex-direction: column; gap: 2px; }
+        .inv-countdown-label { font-size: 10px; color: #666; font-weight: 700; text-transform: uppercase; }
+        .key-countdown { font-size: 13px; font-weight: 700; color: var(--gold); font-family: 'Poppins'; }
+        
+        .inv-badge { padding: 4px 10px; border-radius: 6px; font-weight: 700; font-size: 10px; text-transform: uppercase; display: flex; align-items: center; gap: 5px; }
+        .badge-ready { background: rgba(255, 152, 0, 0.1); color: var(--status-ready); border: 1px solid rgba(255, 152, 0, 0.2); }
+        .badge-active { background: rgba(0, 230, 118, 0.1); color: var(--status-active); border: 1px solid rgba(0, 230, 118, 0.2); }
+        .badge-expired { background: rgba(255, 68, 68, 0.1); color: var(--status-expired); border: 1px solid rgba(255, 68, 68, 0.2); }
+        .badge-suspended { background: #222; color: #888; border: 1px solid #444; }
+
+        .inv-search-container { position: relative; margin-bottom: 10px; flex-shrink: 0; }
+        .inv-search-container input {
+            width: 100%; background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            padding: 10px 10px 10px 35px; border-radius: 8px; color: #fff;
+            font-family: 'Kanit'; font-size: 13px; outline: none; box-sizing: border-box; transition: 0.2s;
+        }
+        .inv-search-container input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
+        .inv-search-container i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 12px; }
+
+        .profile-header { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #2a2a2a; }
+        .profile-avatar { width: 70px; height: 70px; background: #1a1a1a; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #666; border: 2px solid #333; position: relative; }
+        .profile-name-box { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; }
+        .profile-name { font-size: 22px; font-weight: 800; color: #fff; }
+        .edit-profile-icon { color: #666; font-size: 16px; cursor: pointer; transition: 0.2s; }
+        .edit-profile-icon:hover { color: var(--accent); }
+        .profile-role { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; background: rgba(255,0,0,0.08); padding: 4px 10px; border-radius: 6px; display: inline-block; border: 1px solid rgba(255,0,0,0.2); }
+
+        /* Input Modal Style & Password Toggle */
+        .input-group-modal { margin-bottom: 15px; text-align: left; }
+        .input-group-modal label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
+        
+        .password-wrapper { position: relative; width: 100%; }
+        .password-toggle-icon {
+            position: absolute;
+            right: 15px;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #666;
+            cursor: pointer;
+            z-index: 2;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .password-toggle-icon:hover { color: #fff; }
+
+        .input-group-modal input { 
+            width: 100%; 
+            background: #0a0a0c; 
+            border: 1px solid #333; 
+            color: #fff; 
+            padding: 12px 40px 12px 12px; /* Added padding-right for icon */
+            border-radius: 8px; 
+            font-family: 'Kanit'; 
+            transition: 0.2s; 
+            font-size: 14px; 
+            box-sizing: border-box; 
+        }
+        .input-group-modal input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,0,0,0.15); outline: none; }
+
+        /* --- TOAST NOTIFICATION STYLES --- */
+        #toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 10000;
+            display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #18181f; color: #fff; min-width: 280px; max-width: 320px;
+            padding: 16px; border-radius: 12px; border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; align-items: flex-start; gap: 12px;
+            transform: translateX(100%); opacity: 0;
+            animation: toastSlideIn 0.3s forwards ease-out;
+            pointer-events: auto; position: relative; overflow: hidden;
+        }
+        .toast.hide { animation: toastSlideOut 0.3s forwards ease-in; }
+        @keyframes toastSlideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastSlideOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        
+        .toast-icon { font-size: 20px; flex-shrink: 0; margin-top: 2px; }
+        .toast.success .toast-icon { color: #00e676; }
+        .toast.error .toast-icon { color: #ff4444; }
+        .toast.info .toast-icon { color: #2196f3; }
+        
+        .toast-content { flex: 1; display: flex; flex-direction: column; gap: 4px; }
+        .toast-title { font-weight: 700; font-size: 14px; line-height: 1.2; }
+        .toast-msg { font-size: 12px; color: #aaa; line-height: 1.4; }
+        
+        .toast-close { position: absolute; top: 10px; right: 10px; color: #666; cursor: pointer; font-size: 12px; }
+        .toast-close:hover { color: #fff; }
+        
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; background: var(--accent); width: 100%; animation: toastProgress 3s linear forwards; }
+        .toast.success .toast-progress { background: #00e676; }
+        .toast.error .toast-progress { background: #ff4444; }
+        .toast.info .toast-progress { background: #2196f3; }
+        @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
+
+        /* CUSTOM CONFIRM MODAL */
+        #confirm-modal { z-index: 10001; }
+        .confirm-actions { display: flex; gap: 10px; margin-top: 20px; }
+        .btn-confirm-yes { background: var(--accent); color: white; flex: 1; padding: 12px; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+        .btn-confirm-no { background: rgba(255,255,255,0.05); color: #ccc; flex: 1; padding: 12px; border: 1px solid transparent; border-radius: 8px; font-weight: 600; cursor: pointer; }
+        .btn-confirm-no:hover { background: rgba(255,255,255,0.1); color: white; }
+
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div id="toast-container"></div>
+    
+    <div id="header">
+        <div class="brand" onclick="window.location.reload()">
+            <div class="brand-icon">Z</div>
+            <div class="brand-text">ZENU <span>SHOP</span></div>
+        </div>
+        
+        <div class="header-right">
+            <a href="Login.html" class="nav-btn primary" id="auth-btn">
+                <i class="fa-solid fa-right-to-bracket"></i> <span>LOGIN</span>
+            </a>
+            <div class="points-badge" onclick="window.location.href='ZENU_Topup.html'" id="points-display" style="display:none;">
+                <i class="fa-solid fa-coins"></i> 
+                <span id="user-points" class="label">0</span> <span style="font-size: 10px; margin-left: 2px;">P</span>
+            </div>
+            <button class="nav-btn" onclick="openProfileModal()" id="btn-profile" style="display:none;">
+                <i class="fa-solid fa-user"></i> <span>PROFILE</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="hero">
+        <h1>ZENU HUB Key Store</h1>
+        <p>บริการจำหน่ายคีย์อัตโนมัติ 24 ชม. รวดเร็ว ปลอดภัย</p>
+    </div>
+
+    <div class="container">
+        <div class="toolbar">
+            <div class="filter-group">
+                <button class="filter-btn active" onclick="filterShop('all')">ทั้งหมด</button>
+                <button class="filter-btn" onclick="filterShop('hourly')">รายชั่วโมง</button>
+                <button class="filter-btn" onclick="filterShop('daily')">รายวัน</button>
+                <button class="filter-btn" onclick="filterShop('weekly')">รายสัปดาห์</button>
+                <button class="filter-btn" onclick="filterShop('monthly')">รายเดือน</button>
+                <button class="filter-btn" onclick="filterShop('lifetime')">ถาวร</button>
+            </div>
+            <div class="search-box">
+                <input type="text" id="search-input" placeholder="ค้นหาสินค้า..." onkeyup="filterShop()">
+                <i class="fa-solid fa-magnifying-glass"></i>
+            </div>
+        </div>
+        <div class="shop-grid" id="shop-grid"></div>
+    </div>
+
+    <!-- PROFILE MODAL -->
+    <div id="profile-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="profile-header">
+                <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
+                <div class="profile-name-box">
+                    <div class="profile-name" id="user-name-display">Loading...</div>
+                    <i class="fa-solid fa-pen-to-square edit-profile-icon" onclick="openEditProfile()" title="แก้ไขชื่อ"></i>
+                </div>
+                <div class="profile-role" id="user-role-display">MEMBER</div>
+            </div>
+            <div id="admin-panel-group" style="display:none; margin-bottom:15px;">
+                <button class="btn-full" style="background:#222; border:1px solid #444;" onclick="window.location.href='Shop_Manager.html'"><i class="fa-solid fa-store"></i> MANAGE SHOP</button>
+                <button class="btn-full" style="background:#222; border:1px solid #444;" onclick="window.location.href='Key_Manager.html'"><i class="fa-solid fa-key"></i> MANAGE KEYS</button>
+            </div>
+            <button class="btn-full" onclick="openInventory()"><i class="fa-solid fa-box-open"></i> MY INVENTORY</button>
+            <!-- Changed from Reset Password via Email to Change Password Modal -->
+            <button class="btn-full" style="background:#333; border:1px solid #444; margin-top:8px;" onclick="openChangePasswordModal()"><i class="fa-solid fa-lock"></i> CHANGE PASSWORD</button>
+            <button class="btn-full btn-cancel" style="color:#ff4444;" onclick="logout()">LOGOUT</button>
+            <button class="btn-full btn-cancel" onclick="closeModal('profile-modal')">Close</button>
+        </div>
+    </div>
+
+    <!-- EDIT PROFILE MODAL -->
+    <div id="edit-profile-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="text-align:center; margin-bottom:20px;">
+                <h3 style="color:#fff; margin:0; font-size:20px; font-weight:800;">EDIT PROFILE</h3>
+            </div>
+            <div class="input-group-modal">
+                <label>NEW USERNAME</label>
+                <input type="text" id="new-username" placeholder="ตั้งชื่อใหม่ (3-20 ตัวอักษร)">
+            </div>
+            <button class="btn-full" onclick="saveProfile()" id="btn-save-profile">SAVE CHANGES</button>
+            <button class="btn-full btn-cancel" onclick="closeModal('edit-profile-modal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- CHANGE PASSWORD MODAL -->
+    <div id="change-password-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div style="text-align:center; margin-bottom:20px;">
+                <h3 style="color:#fff; margin:0; font-size:20px; font-weight:800;">CHANGE PASSWORD</h3>
+            </div>
+            
+            <div class="input-group-modal">
+                <label>CURRENT PASSWORD</label>
+                <div class="password-wrapper">
+                    <input type="password" id="current-password-input" placeholder="รหัสผ่านปัจจุบัน">
+                    <i class="fa-regular fa-eye password-toggle-icon" onclick="togglePassword('current-password-input', this)"></i>
+                </div>
+            </div>
+            
+            <div class="input-group-modal">
+                <label>NEW PASSWORD</label>
+                <div class="password-wrapper">
+                    <input type="password" id="new-password-input" placeholder="รหัสผ่านใหม่ (ขั้นต่ำ 6 ตัวอักษร)">
+                    <i class="fa-regular fa-eye password-toggle-icon" onclick="togglePassword('new-password-input', this)"></i>
+                </div>
+            </div>
+
+            <div class="input-group-modal">
+                <label>CONFIRM NEW PASSWORD</label>
+                <div class="password-wrapper">
+                    <input type="password" id="confirm-new-password-input" placeholder="ยืนยันรหัสผ่านใหม่">
+                    <i class="fa-regular fa-eye password-toggle-icon" onclick="togglePassword('confirm-new-password-input', this)"></i>
+                </div>
+            </div>
+
+            <button class="btn-full" onclick="doChangePassword()" id="btn-change-pass">CONFIRM CHANGE</button>
+            <button class="btn-full btn-cancel" onclick="closeModal('change-password-modal')">CANCEL</button>
+        </div>
+    </div>
+
+    <!-- INVENTORY MODAL -->
+    <div id="inv-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width: 480px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; flex-shrink: 0;">
+                <h3 style="color:#fff; margin:0; font-size:20px; font-weight:800;">MY INVENTORY</h3>
+                <span style="font-size:11px; color:#666; background:rgba(255,255,255,0.05); padding:4px 10px; border-radius:20px;"><i class="fa-solid fa-key"></i> <span id="key-count">0</span> Keys</span>
+            </div>
+            <div class="inv-search-container">
+                <i class="fa-solid fa-magnifying-glass"></i>
+                <input type="text" id="inv-search-input" placeholder="ค้นหา..." onkeyup="filterInventory()">
+            </div>
+            <div class="inventory-list" id="inv-list">Loading...</div>
+            <button class="btn-full btn-cancel" style="margin-top: 15px;" onclick="closeModal('inv-modal')">Close Window</button>
+        </div>
+    </div>
+    
+    <!-- SUCCESS MODAL -->
+    <div id="success-modal" class="modal-overlay">
+        <div class="modal-box" style="text-align:center;">
+            <div style="font-size:60px; color:#00e676; margin-bottom:15px;"><i class="fa-solid fa-circle-check"></i></div>
+            <h3 style="color:#00e676; margin:0 0 5px 0; font-size:24px;">SUCCESS</h3>
+            <p style="color:#ddd; margin-bottom:25px; font-size:14px;">ซื้อสินค้าเรียบร้อย!</p>
+            <div style="background:#0a0a0c; padding:20px; border-radius:12px; border:1px dashed #444; margin-bottom:25px;">
+                <div id="new-key-display" style="font-family:'JetBrains Mono', monospace; color:var(--accent); font-size:20px; font-weight:bold; letter-spacing:1px; word-break:break-all;"></div>
+            </div>
+            <button class="btn-full" onclick="copyNewKey()"><i class="fa-regular fa-copy"></i> COPY KEY</button>
+            <button class="btn-full btn-cancel" onclick="closeModal('success-modal')">Close</button>
+        </div>
+    </div>
+
+    <!-- CUSTOM CONFIRM MODAL -->
+    <div id="confirm-modal" class="modal-overlay">
+        <div class="modal-box" style="text-align:center; max-width:320px;">
+            <div style="font-size:40px; color:var(--gold); margin-bottom:15px;"><i class="fa-solid fa-circle-question"></i></div>
+            <h3 style="color:#fff; margin:0 0 10px 0; font-size:20px;">ARE YOU SURE?</h3>
+            <p id="confirm-msg" style="color:#aaa; font-size:13px; margin:0;">Please confirm your action.</p>
+            <div class="confirm-actions">
+                <button class="btn-confirm-no" onclick="closeConfirm(false)">CANCEL</button>
+                <button class="btn-confirm-yes" onclick="closeConfirm(true)">CONFIRM</button>
+            </div>
+        </div>
+    </div>
+    
+    <script src="API.js"></script>
+    <script>
+        const firebaseConfig = window.getSecureConfig();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const rtdb = firebase.database();
+        
+        let currentUser = null, userPoints = 0;
+        let productsCache = [], stockCache = {};
+        let currentFilter = 'all';
+        let inventoryTimer = null;
+        let currentUsername = ""; 
+        let confirmCallback = null; // For custom confirm
+
+        showSkeleton();
+
+        // --- TOAST FUNCTION ---
+        function showToast(message, type = 'info') {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+            toast.className = `toast ${type}`;
+            
+            let icon = 'fa-circle-info';
+            let title = 'Notification';
+            
+            if(type === 'success') { icon = 'fa-circle-check'; title = 'Success'; }
+            if(type === 'error') { icon = 'fa-circle-exclamation'; title = 'Error'; }
+
+            toast.innerHTML = `
+                <i class="fa-solid ${icon} toast-icon"></i>
+                <div class="toast-content">
+                    <div class="toast-title">${title}</div>
+                    <div class="toast-msg">${message}</div>
+                </div>
+                <div class="toast-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></div>
+                <div class="toast-progress"></div>
+            `;
+            
+            container.appendChild(toast);
+            
+            // Auto remove after 3s
+            setTimeout(() => {
+                toast.classList.add('hide');
+                toast.addEventListener('animationend', () => toast.remove());
+            }, 3000);
+        }
+
+        // --- CUSTOM CONFIRM FUNCTION ---
+        function showConfirm(msg, callback) {
+            document.getElementById('confirm-msg').innerText = msg;
+            document.getElementById('confirm-modal').classList.add('active');
+            confirmCallback = callback;
+        }
+        
+        function closeConfirm(result) {
+            document.getElementById('confirm-modal').classList.remove('active');
+            if (confirmCallback) confirmCallback(result);
+            confirmCallback = null;
+        }
+
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                currentUser = user;
+                document.getElementById('auth-btn').style.display = 'none';
+                document.getElementById('points-display').style.display = 'flex';
+                document.getElementById('btn-profile').style.display = 'flex';
+                
+                rtdb.ref(`users/${user.uid}`).on('value', snap => {
+                    const data = snap.val() || { points: 0, username: 'User' };
+                    userPoints = data.points || 0;
+                    currentUsername = data.username || "Unknown";
+                    document.getElementById('user-points').innerText = userPoints.toLocaleString();
+                    document.getElementById('user-name-display').innerText = currentUsername;
+                    const role = (data.role || 'members').toLowerCase();
+                    document.getElementById('user-role-display').innerText = role.toUpperCase();
+                    document.getElementById('admin-panel-group').style.display = (role === 'admin') ? 'block' : 'none';
+                });
+            } else {
+                currentUser = null;
+                document.getElementById('auth-btn').style.display = 'flex';
+                document.getElementById('points-display').style.display = 'none';
+                document.getElementById('btn-profile').style.display = 'none';
+            }
+        });
+
+        function showSkeleton() {
+            const grid = document.getElementById('shop-grid');
+            let html = '';
+            for(let i=0; i<8; i++) {
+                html += `
+                <div class="product-card" style="border:1px solid #2a2a35; pointer-events:none;">
+                    <div class="card-top">
+                        <div class="skeleton skeleton-icon"></div>
+                        <div class="card-details" style="width:100%;">
+                            <div class="skeleton skeleton-text" style="width:70%;"></div>
+                            <div class="skeleton skeleton-text" style="width:40%;"></div>
+                            <div class="skeleton skeleton-text" style="width:50%; margin-top:5px;"></div>
+                        </div>
+                    </div>
+                    <div class="card-bottom">
+                        <div class="skeleton skeleton-text" style="width:30%;"></div>
+                        <div class="skeleton skeleton-btn"></div>
+                    </div>
+                </div>`;
+            }
+            grid.innerHTML = html;
+        }
+
+        rtdb.ref('shop_products').on('value', snap => {
+            const products = snap.val() || {};
+            productsCache = Object.keys(products).map(key => ({ id: key, ...products[key] })).sort((a,b) => a.price - b.price);
+            renderShop();
+        });
+
+        rtdb.ref('Keys').orderByChild('is_sold').equalTo(false).on('value', snap => {
+            stockCache = {};
+            if (snap.exists()) {
+                snap.forEach(child => {
+                    const k = child.val();
+                    if (k.active !== false && !k.activated) {
+                        let type = normalize(k.duration_label);
+                        stockCache[type] = (stockCache[type] || 0) + 1;
+                    }
+                });
+            }
+            renderShop();
+        });
+
+        function normalize(l) { 
+            if(!l) return 'unknown'; l=String(l).toUpperCase().replace(/\s/g,''); 
+            if(l.includes('1H')) return '1h'; if(l.includes('6H')) return '6h'; if(l.includes('12H')) return '12h'; 
+            if(l.includes('24H')||l.includes('1DAY')) return '24h'; if(l.includes('3D')) return '3d'; 
+            if(l.includes('7D')||l.includes('1WEEK')) return '7d'; if(l.includes('30D')||l.includes('1MON')) return '30d'; 
+            if(l.includes('LIFE')||l.includes('PERM')) return 'permanent'; return l; 
+        }
+
+        function getDurationMs(durCode) {
+            const hour = 3600000;
+            const day = 86400000;
+            switch(durCode) {
+                case '1h': return 1 * hour;
+                case '6h': return 6 * hour;
+                case '12h': return 12 * hour;
+                case '24h': return 1 * day;
+                case '3d': return 3 * day;
+                case '7d': return 7 * day;
+                case '30d': return 30 * day;
+                default: return 0;
+            }
+        }
+
+        function filterShop(type) {
+            if(type) {
+                currentFilter = type;
+                document.querySelectorAll('.filter-btn').forEach(b => b.classList.remove('active'));
+                event.target.classList.add('active');
+            }
+            renderShop();
+        }
+
+        function getCategory(durCode) {
+            if(['1h','6h','12h'].includes(durCode)) return 'hourly';
+            if(['24h','3d'].includes(durCode)) return 'daily';
+            if(['7d'].includes(durCode)) return 'weekly';
+            if(['30d'].includes(durCode)) return 'monthly';
+            if(durCode === 'permanent') return 'lifetime';
+            return 'other';
+        }
+
+        function renderShop() {
+            if (productsCache.length === 0) return;
+
+            const grid = document.getElementById('shop-grid'); 
+            const searchVal = document.getElementById('search-input').value.toLowerCase();
+            grid.innerHTML = '';
+            
+            const filtered = productsCache.filter(p => {
+                const cat = getCategory(p.duration);
+                return (currentFilter === 'all' || cat === currentFilter) && p.name.toLowerCase().includes(searchVal);
+            });
+            
+            filtered.forEach(p => {
+                const stock = stockCache[p.duration] || 0;
+                const isOut = stock <= 0;
+                const div = document.createElement('div');
+                div.className = 'product-card';
+                div.innerHTML = `
+                    ${p.tag ? `<div class="ribbon">${p.tag}</div>` : ''}
+                    <div class="card-top">
+                        <div class="card-icon"><i class="${p.icon || 'fa-solid fa-key'}"></i></div>
+                        <div class="card-details">
+                            <h3 class="card-title">${p.name}</h3>
+                            <div class="card-dur"><i class="fa-regular fa-clock"></i> ${p.duration}</div>
+                            <div class="stock-indicator ${isOut?'stock-out':'stock-in'}">
+                                <span class="stock-dot"></span>
+                                ${isOut ? 'สินค้าหมด' : `คงเหลือ ${stock} ชิ้น`}
+                            </div>
+                        </div>
+                    </div>
+                    <div class="card-bottom">
+                        <div class="price-area">
+                            <span class="price-label">PRICE</span>
+                            <span class="price-val">${p.price} P</span>
+                        </div>
+                        <button class="btn-buy" ${isOut?'disabled':''} onclick="buyItem('${p.duration}', ${p.price}, '${p.name}')">
+                            ${isOut ? 'สินค้าหมด' : '<i class="fa-solid fa-cart-shopping"></i> ซื้อเลย'}
+                        </button>
+                    </div>
+                `;
+                grid.appendChild(div);
+            });
+        }
+
+        function buyItem(dur, price, name) {
+            if(!currentUser) return window.location.href = 'Login.html';
+            
+            // Replaced alert with showToast
+            if(userPoints < price) return showToast("คะแนนไม่พอ! กรุณาเติมเงิน", "error");
+            
+            // Replaced confirm with showConfirm
+            showConfirm(`ยืนยันการซื้อ ${name} ในราคา ${price} P?`, async (confirmed) => {
+                if(!confirmed) return;
+                
+                try {
+                    const snap = await rtdb.ref('Keys').orderByChild('is_sold').equalTo(false).once('value');
+                    const keys = snap.val() || {};
+                    
+                    let target = Object.keys(keys).find(id => 
+                        !keys[id].activated && 
+                        normalize(keys[id].duration_label) === dur && 
+                        keys[id].active !== false
+                    );
+                    
+                    // Replaced alert with showToast
+                    if (!target) return showToast("สินค้าหมดกะทันหัน!", "error");
+                    
+                    let isPerm = (dur === 'permanent');
+                    
+                    await rtdb.ref(`Keys/${target}`).update({ 
+                        is_sold: true, 
+                        sold_to: currentUser.uid, 
+                        sold_at: firebase.database.ServerValue.TIMESTAMP, 
+                        product_name: name, 
+                        activated: isPerm, 
+                        activated_at: isPerm ? firebase.database.ServerValue.TIMESTAMP : null,
+                        expires_at: null 
+                    });
+                    
+                    await rtdb.ref(`users/${currentUser.uid}`).update({ points: userPoints - price });
+                    document.getElementById('new-key-display').innerText = target;
+                    document.getElementById('success-modal').classList.add('active');
+                } catch (e) { 
+                    showToast(e.message, "error"); 
+                }
+            });
+        }
+
+        async function openInventory() {
+            closeModal('profile-modal'); 
+            document.getElementById('inv-modal').classList.add('active');
+            const list = document.getElementById('inv-list'); 
+            const searchInput = document.getElementById('inv-search-input');
+            if (searchInput) searchInput.value = '';
+
+            list.innerHTML = '<div style="text-align:center; padding:20px; color:#666;"><i class="fa-solid fa-circle-notch fa-spin"></i> Loading...</div>';
+            
+            try {
+                rtdb.ref('Keys').off();
+                rtdb.ref('Keys')
+                    .orderByChild('sold_to')
+                    .equalTo(currentUser.uid)
+                    .on('value', snap => {
+                        const data = snap.val();
+                        if (!data) {
+                            list.innerHTML = '<div style="text-align:center; color:#666; padding:40px;">ไม่มีข้อมูล</div>';
+                            document.getElementById('key-count').innerText = '0';
+                            return;
+                        }
+
+                        const items = Object.entries(data)
+                            .map(([k,v]) => ({ key: k, ...v }))
+                            .filter(i => i.is_sold === true)
+                            .sort((a,b) => (b.sold_at || 0) - (a.sold_at || 0));
+
+                        if (items.length === 0) {
+                            list.innerHTML = '<div style="text-align:center; color:#666; padding:40px;">ไม่มีคีย์ที่ถูกซื้อ</div>';
+                            document.getElementById('key-count').innerText = '0';
+                            return;
+                        }
+
+                        document.getElementById('key-count').innerText = items.length;
+                        let inventoryHTML = '';
+                        const now = Date.now();
+
+                        items.forEach(i => {
+                            let actionBtns = '';
+                            let badge = '';
+                            let timerHtml = '<span style="color:#666;">---</span>';
+                            const isSuspended = i.active === false; 
+
+                            if (isSuspended) {
+                                badge = '<span class="inv-badge badge-suspended"><i class="fa-solid fa-ban"></i> ระงับการใช้งาน</span>';
+                                if (i.activated) {
+                                    timerHtml = '<span style="color:#888; font-weight:bold;">SUSPENDED (PAUSED)</span>';
+                                } else {
+                                    timerHtml = '<span style="color:#888;">SUSPENDED</span>';
+                                    actionBtns = `<button class="inv-action-btn" disabled style="opacity:0.5; cursor:not-allowed;"><i class="fa-solid fa-ban"></i> ระงับ</button>`;
+                                }
+                            } else {
+                                if (!i.activated) {
+                                    badge = '<span class="inv-badge badge-ready"><i class="fa-solid fa-hourglass-start"></i> พร้อมใช้งาน</span>';
+                                    actionBtns = `
+                                        <button class="inv-action-btn activate" onclick="activateKey('${i.key}', '${i.duration_label}')">
+                                            <i class="fa-solid fa-bolt"></i> เปิดใช้งาน
+                                        </button>`;
+                                } else {
+                                    if (i.expires_at && now > i.expires_at) {
+                                        badge = '<span class="inv-badge badge-expired"><i class="fa-solid fa-circle-xmark"></i> หมดอายุ</span>';
+                                        timerHtml = '<span style="color:#ff4444;">EXPIRED</span>';
+                                    } else if (i.expires_at) {
+                                        badge = '<span class="inv-badge badge-active"><i class="fa-solid fa-bolt"></i> กำลังทำงาน</span>';
+                                        timerHtml = `<div class="key-countdown" data-expire="${i.expires_at}">Calculating...</div>`;
+                                    } else {
+                                        badge = '<span class="inv-badge badge-active"><i class="fa-solid fa-infinity"></i> ถาวร</span>';
+                                        timerHtml = '<span style="color:#00e676; letter-spacing:1px;">LIFE-TIME</span>';
+                                    }
+                                }
+                            }
+
+                            inventoryHTML += `
+                                <div class="inv-card">
+                                    <div class="inv-header">
+                                        <div class="inv-title"><i class="fa-solid fa-box-open"></i> ${i.product_name || 'Premium Key'}</div>
+                                        ${badge}
+                                    </div>
+                                    <div class="inv-key-box">
+                                        <span class="inv-key-text ${isSuspended ? 'suspended' : ''}" id="key-${i.key}">${i.key}</span>
+                                        <div style="display:flex; gap:8px;">
+                                            <button class="inv-action-btn copy" onclick="copyToClipboard('${i.key}', this)" title="คัดลอกคีย์">
+                                                <i class="fa-regular fa-copy"></i>
+                                            </button>
+                                            ${actionBtns}
+                                        </div>
+                                    </div>
+                                    <div class="inv-footer">
+                                        <div class="inv-countdown-wrap">
+                                            <span class="inv-countdown-label">เวลาที่เหลือ</span>
+                                            ${timerHtml}
+                                        </div>
+                                        <div style="text-align:right;">
+                                            <span class="inv-countdown-label">วันที่ซื้อ</span>
+                                            <div style="font-size:11px; color:#888;">${new Date(i.sold_at).toLocaleDateString('th-TH')}</div>
+                                        </div>
+                                    </div>
+                                </div>`;
+                        });
+
+                        list.innerHTML = inventoryHTML;
+                        startInventoryTimer();
+                        filterInventory();
+                    });
+            } catch (e) { 
+                console.error(e);
+                list.innerHTML = '<div style="text-align:center; padding:20px; color:#ff4444;">เกิดข้อผิดพลาดในการโหลดข้อมูล</div>'; 
+            }
+        }
+
+        function filterInventory() {
+            const input = document.getElementById('inv-search-input');
+            if (!input) return;
+            const filter = input.value.toLowerCase();
+            const cards = document.getElementsByClassName('inv-card');
+            for (let i = 0; i < cards.length; i++) {
+                const card = cards[i];
+                const title = card.querySelector('.inv-title').innerText.toLowerCase();
+                const keyText = card.querySelector('.inv-key-text').innerText.toLowerCase();
+                if (title.includes(filter) || keyText.includes(filter)) {
+                    card.style.display = "";
+                } else {
+                    card.style.display = "none";
+                }
+            }
+        }
+
+        function startInventoryTimer() {
+            if(inventoryTimer) clearInterval(inventoryTimer);
+            const update = () => {
+                const now = Date.now();
+                const countdownElements = document.querySelectorAll('.key-countdown');
+                if(countdownElements.length === 0) return;
+                
+                countdownElements.forEach(el => {
+                    const expireAt = parseInt(el.getAttribute('data-expire'));
+                    const diff = expireAt - now;
+                    if(diff <= 0) { el.innerHTML = '<span style="color:#ff4444;">EXPIRED</span>'; return; }
+                    const d = Math.floor(diff/86400000), h = Math.floor((diff%86400000)/3600000), m = Math.floor((diff%3600000)/60000), s = Math.floor((diff%60000)/1000);
+                    el.innerText = `${d>0?d+'d ':''}${h}h ${m}m ${s}s`;
+                });
+            };
+            update(); inventoryTimer = setInterval(update, 1000);
+        }
+
+        function copyToClipboard(txt, btn) { 
+            navigator.clipboard.writeText(txt);
+            if(btn) {
+                const originalContent = btn.innerHTML;
+                btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+                btn.style.borderColor = '#00e676';
+                btn.style.color = '#00e676';
+                
+                // Optional: Show a small toast for copy action
+                showToast("คัดลอกสำเร็จ!", "success");
+
+                setTimeout(() => {
+                    btn.innerHTML = originalContent;
+                    btn.style.borderColor = '';
+                    btn.style.color = '';
+                }, 1500);
+            }
+        }
+        
+        function activateKey(keyId, durationLabel){
+            // Replaced confirm with showConfirm
+            showConfirm('ยืนยันการเปิดใช้งานคีย์นี้? (เวลาจะเริ่มนับถอยหลังทันที)', (confirmed) => {
+                if(!confirmed) return;
+                
+                let updates = { 
+                    activated: true, 
+                    activated_at: firebase.database.ServerValue.TIMESTAMP 
+                };
+
+                if (durationLabel && !durationLabel.toUpperCase().includes('PERM') && !durationLabel.toUpperCase().includes('LIFE')) {
+                    const ms = getDurationMs(normalize(durationLabel));
+                    if (ms > 0) {
+                        updates.expires_at = Date.now() + ms;
+                    }
+                }
+                
+                rtdb.ref('Keys/' + keyId).update(updates)
+                    .then(() => showToast("เปิดใช้งานคีย์สำเร็จ!", "success"))
+                    .catch((e) => showToast(e.message, "error"));
+            });
+        }
+
+        function openProfileModal() { document.getElementById('profile-modal').classList.add('active'); }
+        function closeModal(id) { 
+            document.getElementById(id).classList.remove('active'); 
+            if(id === 'inv-modal') { 
+                clearInterval(inventoryTimer); 
+                rtdb.ref('Keys').off(); 
+            }
+        }
+        function logout() { auth.signOut(); closeModal('profile-modal'); showToast("ออกจากระบบแล้ว", "info"); }
+        function copyNewKey() { copyToClipboard(document.getElementById('new-key-display').innerText); }
+
+        function openEditProfile() {
+            closeModal('profile-modal');
+            document.getElementById('new-username').value = currentUsername;
+            document.getElementById('edit-profile-modal').classList.add('active');
+        }
+
+        async function saveProfile() {
+            const newName = document.getElementById('new-username').value.trim();
+            const btn = document.getElementById('btn-save-profile');
+
+            if (newName.length < 3) return showToast("ชื่อต้องมีความยาว 3 ตัวอักษรขึ้นไป", "error");
+            if (newName === currentUsername) return closeModal('edit-profile-modal');
+
+            btn.disabled = true;
+            btn.innerText = "CHECKING...";
+
+            try {
+                const usersRef = rtdb.ref('users');
+                const snap = await usersRef.orderByChild('username').equalTo(newName).once('value');
+                
+                if (snap.exists()) {
+                    showToast("ชื่อนี้ถูกใช้ไปแล้ว กรุณาใช้ชื่ออื่น", "error");
+                    btn.disabled = false;
+                    btn.innerText = "SAVE CHANGES";
+                    return;
+                }
+
+                await rtdb.ref(`users/${currentUser.uid}`).update({ username: newName });
+                
+                showToast("เปลี่ยนชื่อสำเร็จ!", "success");
+                closeModal('edit-profile-modal');
+
+            } catch (e) {
+                console.error(e);
+                showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "SAVE CHANGES";
+            }
+        }
+
+        // New Change Password Functions with Toggle & Confirmation
+        function openChangePasswordModal() {
+            closeModal('profile-modal');
+            // Clear inputs
+            document.getElementById('current-password-input').value = '';
+            document.getElementById('new-password-input').value = '';
+            document.getElementById('confirm-new-password-input').value = '';
+            
+            // Reset all password fields to type="password" and icons to eye
+            document.querySelectorAll('.input-group-modal input[type="text"]').forEach(input => {
+                input.type = 'password';
+            });
+            document.querySelectorAll('.password-toggle-icon').forEach(icon => {
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            });
+
+            document.getElementById('change-password-modal').classList.add('active');
+        }
+
+        function togglePassword(inputId, icon) {
+            const input = document.getElementById(inputId);
+            if (input.type === "password") {
+                input.type = "text";
+                icon.classList.remove('fa-eye');
+                icon.classList.add('fa-eye-slash');
+            } else {
+                input.type = "password";
+                icon.classList.remove('fa-eye-slash');
+                icon.classList.add('fa-eye');
+            }
+        }
+
+        async function doChangePassword() {
+            const currentPass = document.getElementById('current-password-input').value;
+            const newPass = document.getElementById('new-password-input').value;
+            const confirmPass = document.getElementById('confirm-new-password-input').value;
+            const btn = document.getElementById('btn-change-pass');
+
+            if(!currentPass || !newPass || !confirmPass) return showToast("กรุณากรอกข้อมูลให้ครบถ้วน", "error");
+            if(newPass !== confirmPass) return showToast("รหัสผ่านใหม่ไม่ตรงกัน", "error");
+            if(newPass.length < 6) return showToast("รหัสผ่านใหม่ต้องมีอย่างน้อย 6 ตัวอักษร", "error");
+
+            btn.disabled = true;
+            btn.innerText = "UPDATING...";
+
+            try {
+                const user = firebase.auth().currentUser;
+                if (!user) throw new Error("ไม่พบผู้ใช้งาน");
+
+                // Re-authenticate user before changing sensitive information
+                const credential = firebase.auth.EmailAuthProvider.credential(user.email, currentPass);
+                await user.reauthenticateWithCredential(credential);
+
+                // Update Password
+                await user.updatePassword(newPass);
+
+                showToast("เปลี่ยนรหัสผ่านสำเร็จ!", "success");
+                closeModal('change-password-modal');
+            } catch (e) {
+                console.error(e);
+                let msg = e.message;
+                if(e.code === 'auth/wrong-password') msg = "รหัสผ่านปัจจุบันไม่ถูกต้อง";
+                if(e.code === 'auth/weak-password') msg = "รหัสผ่านง่ายเกินไป";
+                if(e.code === 'auth/requires-recent-login') msg = "กรุณาล็อกอินใหม่แล้วลองอีกครั้ง";
+                
+                showToast("เกิดข้อผิดพลาด: " + msg, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "CONFIRM CHANGE";
+            }
+        }
+
+    </script>
+</body>
+</html>
+
+

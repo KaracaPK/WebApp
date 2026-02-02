@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ZENU SHOP(ADMIN)</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+
+    <!-- FontAwesome & Fonts -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Poppins:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-body: #0f0f13;
+            --bg-card: #18181f;
+            --bg-header: rgba(15, 15, 19, 0.95);
+            --accent: #ff0000;
+            --accent-glow: rgba(255, 0, 0, 0.4);
+            --gold: #ffc107;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: #2a2a35;
+            --radius: 12px;
+            --status-ok: #00e676;
+            --status-bad: #ff4444;
+            --status-wait: #ff9800;
+        }
+
+        * { box-sizing: border-box; outline: none; -webkit-tap-highlight-color: transparent; }
+        
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Kanit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image: 
+                linear-gradient(rgba(255, 255, 255, 0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255, 255, 255, 0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            pointer-events: none; z-index: -1;
+        }
+
+        #loading-overlay { 
+            position: fixed; inset: 0; background: #000; z-index: 9999; 
+            display: flex; flex-direction: column; align-items: center; justify-content: center; 
+            transition: opacity 0.5s;
+        }
+        .spinner { width: 40px; height: 40px; border: 3px solid #333; border-top: 3px solid var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; margin-bottom: 20px; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* HEADER IMPROVED */
+        #header {
+            height: 70px; background: var(--bg-header); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 24px; position: sticky; top: 0; z-index: 100;
+        }
+        .brand { display: flex; align-items: center; gap: 12px; font-family: 'Poppins'; cursor: pointer; text-decoration: none; }
+        .brand-icon { 
+            width: 38px; height: 38px; background: linear-gradient(135deg, #222, #000); 
+            border: 1px solid #333; border-radius: 10px; display: flex; align-items: center; justify-content: center; 
+            color: var(--accent); font-weight: 900; font-size: 20px; box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .brand-text { font-size: 18px; font-weight: 800; letter-spacing: -0.5px; color: #fff; } 
+        .brand-text span { color: var(--accent); }
+
+        .header-right { display: flex; align-items: center; gap: 10px; }
+
+        .nav-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #888;
+            padding: 8px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            font-family: 'Poppins'; font-size: 11px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            height: 38px;
+        }
+        .nav-btn:hover { border-color: #555; color: #fff; background: rgba(255,255,255,0.08); transform: translateY(-1px); }
+        .nav-btn.primary { border-color: rgba(255,0,0,0.3); color: var(--accent); background: rgba(255,0,0,0.05); }
+        .nav-btn.primary:hover { background: var(--accent); color: white; border-color: var(--accent); box-shadow: 0 4px 12px var(--accent-glow); }
+        .nav-btn i { font-size: 14px; }
+
+        /* Responsive Header */
+        @media (max-width: 600px) {
+            #header { padding: 0 15px; height: 60px; }
+            .brand-text { display: none; }
+            .nav-btn span { display: none; }
+            .nav-btn { padding: 8px; width: 38px; justify-content: center; gap: 0; }
+        }
+
+        .container { max-width: 1200px; margin: 0 auto; padding: 30px 20px; width: 100%; }
+
+        /* DASHBOARD STATS */
+        .dash-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 15px; margin-bottom: 30px; }
+        .stat-card { 
+            background: var(--bg-card); border: 1px solid var(--border); padding: 20px; border-radius: 12px; 
+            display: flex; align-items: center; justify-content: space-between; position: relative; overflow: hidden;
+        }
+        .stat-info div:first-child { font-size: 11px; color: #666; font-weight: 700; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 5px; }
+        .stat-val { font-size: 28px; font-weight: 800; color: #fff; font-family: 'JetBrains Mono'; line-height: 1; }
+        .stat-icon { font-size: 30px; color: #222; position: absolute; right: 20px; bottom: 10px; opacity: 0.5; transform: rotate(-15deg); }
+
+        /* TABS */
+        .tab-bar { display: flex; gap: 5px; background: #111; padding: 4px; border-radius: 10px; border: 1px solid var(--border); margin-bottom: 25px; width: fit-content; flex-wrap: wrap;}
+        .tab-btn { 
+            padding: 8px 20px; border-radius: 8px; cursor: pointer; font-size: 12px; font-weight: 700; color: #666; transition: 0.2s; border: none; background: transparent; font-family: 'Poppins';
+        }
+        .tab-btn:hover { color: #fff; }
+        .tab-btn.active { background: #222; color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.2); }
+        .tab-content { display: none; animation: fadeIn 0.3s ease; }
+        .tab-content.active { display: block; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* FORMS & CARDS */
+        .card { background: var(--bg-card); border: 1px solid var(--border); border-radius: 16px; padding: 25px; margin-bottom: 20px; }
+        .card-header { font-size: 14px; font-weight: 700; color: #fff; margin-bottom: 20px; display: flex; align-items: center; gap: 8px; }
+        .card-header i { color: var(--accent); }
+
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; align-items: end; }
+        
+        .input-group label { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        
+        input, select { 
+            width: 100%; background: #0a0a0e; border: 1px solid var(--border);
+            color: #fff; padding: 12px; border-radius: 8px; font-family: 'Kanit'; font-size: 13px; transition: 0.2s; 
+        }
+        select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23888' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+            background-repeat: no-repeat;
+            background-position: right 15px center;
+            background-size: 15px;
+            padding-right: 40px;
+            cursor: pointer;
+        }
+        input:focus, select:focus { 
+            border-color: var(--accent); 
+            box-shadow: 0 0 0 2px rgba(255,0,0,0.1); 
+            outline: none;
+        }
+        select:focus {
+            background-image: url("data:image/svg+xml;charset=UTF-8,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ff0000' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3e%3cpolyline points='6 9 12 15 18 9'%3e%3c/polyline%3e%3c/svg%3e");
+        }
+
+        .btn-action {
+            background: var(--accent); color: white; border: none; padding: 12px 20px;
+            border-radius: 8px; font-weight: 700; cursor: pointer; transition: 0.2s;
+            display: flex; align-items: center; justify-content: center; gap: 8px; font-family: 'Poppins'; font-size: 12px;
+            height: 45px;
+        }
+        .btn-action:hover { box-shadow: 0 5px 20px var(--accent-glow); transform: translateY(-1px); }
+        
+        .btn-update { background: #00e676; color: #000; }
+        .btn-update:hover { background: #00c853; }
+        
+        .btn-cancel-edit { 
+            background: transparent; color: #888; border: 1px solid #444; height: 45px; width: 45px; 
+            border-radius: 8px; cursor: pointer; display: none; align-items: center; justify-content: center; transition: 0.2s;
+        }
+        .btn-cancel-edit:hover { background: #222; color: #fff; }
+
+        /* TABLE */
+        .table-container { overflow-x: auto; border-radius: 12px; border: 1px solid var(--border); }
+        .product-table { width: 100%; border-collapse: collapse; background: #131318; min-width: 600px; }
+        .product-table th { text-align: left; padding: 15px; color: #666; border-bottom: 1px solid var(--border); font-size: 10px; text-transform: uppercase; font-weight: 800; letter-spacing: 1px; background: #111; }
+        .product-table td { padding: 15px; border-bottom: 1px solid #1a1a1a; font-size: 13px; vertical-align: middle; color: #ddd; }
+        .product-table tr:last-child td { border-bottom: none; }
+        .product-table tr:hover td { background: rgba(255,255,255,0.02); }
+
+        .stock-pill { 
+            font-family: 'JetBrains Mono'; font-weight: 700; padding: 4px 10px; border-radius: 6px; 
+            font-size: 11px; display: inline-flex; align-items: center; gap: 6px; 
+        }
+        .stock-pill.ok { background: rgba(0, 230, 118, 0.1); color: var(--status-ok); border: 1px solid rgba(0, 230, 118, 0.2); }
+        .stock-pill.low { background: rgba(255, 68, 68, 0.1); color: var(--status-bad); border: 1px solid rgba(255, 68, 68, 0.2); }
+        .stock-pill.wait { background: rgba(255, 152, 0, 0.1); color: var(--status-wait); border: 1px solid rgba(255, 152, 0, 0.2); }
+
+        .btn-icon { 
+            width: 32px; height: 32px; border-radius: 6px; background: #1a1a1a; color: #666; border: 1px solid transparent; 
+            cursor: pointer; transition: 0.2s; display: inline-flex; align-items: center; justify-content: center; margin-right: 5px;
+        }
+        .btn-icon:hover { background: #222; color: #fff; border-color: #333; }
+        .btn-icon.edit:hover { background: rgba(0, 230, 118, 0.1); color: #00e676; border-color: rgba(0, 230, 118, 0.3); }
+        .btn-icon.delete:hover { background: rgba(255,0,0,0.1); color: #ff4444; border-color: rgba(255,0,0,0.3); }
+
+        /* USER MANAGER & MODAL STYLES */
+        .search-container { position: relative; margin-bottom: 20px; display: flex; align-items: center; }
+        .search-container input { padding-right: 40px; }
+        .search-container i { position: absolute; right: 15px; color: #666; pointer-events: none; }
+
+        .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.85); backdrop-filter: blur(8px); z-index: 1000; display: none; align-items: center; justify-content: center; padding: 20px; }
+        .modal-overlay.active { display: flex; }
+        .modal-box { background: #18181f; border: 1px solid #333; padding: 30px; border-radius: 20px; width: 100%; max-width: 480px; position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); max-height: 90vh; overflow-y: auto; }
+        
+        .btn-full { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; background: var(--accent); color: white; font-size: 14px; transition: 0.2s; }
+        .btn-full:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
+        .btn-cancel { background: rgba(255,255,255,0.05); color: #888; margin-top: 10px; border: 1px solid transparent; }
+        .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
+
+        .history-list { max-height: 250px; overflow-y: auto; margin-top: 15px; padding-right: 5px; }
+        .history-item { 
+            background: #111; border: 1px solid #222; padding: 10px; border-radius: 8px; margin-bottom: 8px; 
+            display: flex; justify-content: space-between; align-items: center; font-size: 12px;
+        }
+        .history-key { font-family: 'JetBrains Mono'; color: var(--accent); }
+    </style>
+</head>
+<body>
+
+    <div class="bg-grid"></div>
+    
+    <div id="loading-overlay">
+        <div class="spinner"></div>
+        <div style="color:#fff; font-weight:bold; letter-spacing:1px; font-size:12px; font-family:'Poppins';">VERIFYING ADMIN...</div>
+    </div>
+
+    <div id="header">
+        <div class="brand" onclick="window.location.href='index.html'">
+            <div class="brand-icon">Z</div>
+            <div class="brand-text">ZENU <span>MANAGERS</span></div>
+        </div>
+        <div class="header-right">
+            <button class="nav-btn primary" onclick="window.location.href='Key_Manager.html'">
+                <i class="fa-solid fa-key"></i> <span>KEY MANAGER</span>
+            </button>
+            <button class="nav-btn" onclick="window.location.href='index.html'">
+                <i class="fa-solid fa-arrow-left"></i> <span>BACK TO SHOP</span>
+            </button>
+        </div>
+    </div>
+
+    <div class="container">
+        
+        <div class="dash-grid">
+            <div class="stat-card">
+                <div class="stat-info"><div>TOTAL KEYS</div><div class="stat-val" id="stat-total">...</div></div>
+                <i class="fa-solid fa-database stat-icon"></i>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info"><div>SOLD</div><div class="stat-val" style="color:var(--status-ok)" id="stat-sold">...</div></div>
+                <i class="fa-solid fa-cart-shopping stat-icon"></i>
+            </div>
+            <div class="stat-card">
+                <div class="stat-info"><div>AVAILABLE STOCK</div><div class="stat-val" style="color:var(--accent)" id="stat-stock">...</div></div>
+                <i class="fa-solid fa-box-open stat-icon"></i>
+            </div>
+        </div>
+
+        <div class="tab-bar">
+            <button class="tab-btn active" onclick="switchTab('products')">PRODUCTS MANAGER</button>
+            <button class="tab-btn" onclick="switchTab('users')">USER MANAGER</button>
+            <button class="tab-btn" onclick="switchTab('topups')"><i class="fa-solid fa-money-bill-transfer"></i> TOPUP REQUESTS</button>
+        </div>
+
+        <!-- TAB 1: PRODUCTS -->
+        <div id="tab-products" class="tab-content active">
+            <!-- Add/Edit Product Form -->
+            <div class="card">
+                <div class="card-header" id="form-header"><i class="fa-solid fa-circle-plus"></i> ADD PRODUCT</div>
+                <div class="form-grid">
+                    <div class="input-group"><label>Product Name</label><input type="text" id="p-name" placeholder="ชื่อสินค้า"></div>
+                    <div class="input-group"><label>Price (Points)</label><input type="number" id="p-price" placeholder="ราคาสินค้า"></div>
+                    <div class="input-group"><label>Key Duration</label>
+                        <select id="p-duration">
+                            <option value="1h">1 Hour</option><option value="6h">6 Hours</option>
+                            <option value="12h">12 Hours</option><option value="24h">24 Hours (1 Day)</option>
+                            <option value="3d">3 Days</option><option value="7d">7 Days (1 Week)</option>
+                            <option value="30d">30 Days (1 Month)</option><option value="permanent">Lifetime</option>
+                        </select>
+                    </div>
+                    <div class="input-group"><label>Icon (FontAwesome)</label><input type="text" id="p-icon" value="fa-solid fa-key"></div>
+                    <div class="input-group"><label>Label Tag</label><input type="text" id="p-tag" placeholder="HOT, NEW..."></div>
+                    <div class="input-group" style="display:flex; gap:10px;">
+                        <label>&nbsp;</label>
+                        <button class="btn-action" id="btn-submit-prod" onclick="addProduct()">ADD</button>
+                        <button class="btn-cancel-edit" id="btn-cancel-edit" onclick="cancelEditMode()"><i class="fa-solid fa-xmark"></i></button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Product List -->
+            <div class="table-container">
+                <table class="product-table">
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Duration</th>
+                            <th>Stock</th>
+                            <th>Price</th>
+                            <th style="text-align:right;">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="prod-list"></tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- TAB 2: USERS -->
+        <div id="tab-users" class="tab-content">
+            <div class="card">
+                <div class="card-header"><i class="fa-solid fa-users"></i> USER MANAGEMENT</div>
+                <div class="search-container">
+                    <input type="text" id="user-search-input" placeholder="Search by Username..." onkeyup="filterUsers()">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div class="table-container" style="max-height: 600px; overflow-y: auto;">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Username</th>
+                                <th>Role</th>
+                                <th>Points</th>
+                                <th style="text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="all-users-list">
+                            <tr><td colspan="4" style="text-align:center; padding:20px; color:#666;">Loading users...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- TAB 3: TOPUP REQUESTS (NEW) -->
+        <div id="tab-topups" class="tab-content">
+            <div class="card">
+                <div class="card-header"><i class="fa-solid fa-money-bill-transfer"></i> TOPUP REQUESTS (PENDING)</div>
+                <div class="table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Date/Time</th>
+                                <th>User (UID)</th>
+                                <th>Link</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="topup-list">
+                            <tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">Waiting for requests...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- EDIT USER MODAL -->
+    <div id="edit-user-modal" class="modal-overlay">
+        <div class="modal-box">
+            <div class="card-header" style="justify-content:center; margin-bottom:20px; font-size:18px;"><i class="fa-solid fa-user-pen"></i> EDIT USER</div>
+            
+            <div class="form-grid" style="grid-template-columns: 1fr; gap: 15px;">
+                <div class="input-group"><label>USERNAME</label><input type="text" id="edit-name" readonly style="color:#888; background:#111;"></div>
+                <div class="input-group"><label>ROLE</label>
+                    <select id="edit-role">
+                        <option value="members">Member</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="input-group"><label>POINTS BALANCE</label><input type="number" id="edit-points"></div>
+            </div>
+            
+            <button class="btn-full" style="background:#00e676; color:#000; margin-top:20px;" onclick="saveUserData()">SAVE CHANGES</button>
+
+            <div style="margin-top:30px; border-top:1px dashed #333; padding-top:20px;">
+                <div class="card-header" style="font-size:12px; margin-bottom:10px;"><i class="fa-solid fa-history"></i> PURCHASE HISTORY</div>
+                <div class="history-list" id="user-history">
+                    <div style="text-align:center; color:#666; padding:10px;">Loading history...</div>
+                </div>
+            </div>
+            
+            <button class="btn-full btn-cancel" onclick="closeModal('edit-user-modal')">CLOSE</button>
+        </div>
+    </div>
+    <script src="API.js"></script>
+    <script>
+        const firebaseConfig = window.getSecureConfig();
+        if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+        const auth = firebase.auth();
+        const rtdb = firebase.database();
+
+        let stockData = {};
+        let productsCache = [];
+        let usersCache = []; 
+        let currentTargetUid = null;
+        let editingProductId = null;
+
+        // AUTH & INIT
+        auth.onAuthStateChanged(async (user) => {
+            if (user) {
+                const snap = await rtdb.ref(`users/${user.uid}/role`).once('value');
+                const role = (snap.val() || 'members').toLowerCase();
+                if (role === 'admin') {
+                    document.getElementById('loading-overlay').style.opacity = '0';
+                    setTimeout(() => document.getElementById('loading-overlay').style.display = 'none', 500);
+                    
+                    // Listeners
+                    listenToProducts();
+                    listenToStock();
+                    listenToUsers(); // Load users immediately for caching names
+                    listenToTopups(); // NEW Listener
+                } else {
+                    alert("ACCESS DENIED"); window.location.href = 'index.html';
+                }
+            } else window.location.href = 'Login.html';
+        });
+
+        // 1. PRODUCTS LISTENER
+        function listenToProducts() {
+            rtdb.ref('shop_products').on('value', snap => {
+                const products = snap.val() || {};
+                productsCache = Object.keys(products).map(key => ({ id: key, ...products[key] })).sort((a,b) => a.price - b.price);
+                renderTable();
+            });
+        }
+
+        // 2. STOCK LISTENER
+        function listenToStock() {
+            rtdb.ref('Keys').on('value', snap => {
+                const keys = snap.val() || {};
+                let total = 0, sold = 0, avail = 0;
+                stockData = {}; 
+
+                const now = Date.now();
+                Object.values(keys).forEach(k => {
+                    total++;
+                    if(k.is_sold) sold++;
+                    else if(k.active) {
+                        avail++;
+                        let type = normalizeDuration(k.duration_label);
+                        stockData[type] = (stockData[type] || 0) + 1;
+                    }
+                });
+
+                document.getElementById('stat-total').innerText = total;
+                document.getElementById('stat-sold').innerText = sold;
+                document.getElementById('stat-stock').innerText = avail;
+                
+                renderTable(); 
+            });
+        }
+
+        // 3. USERS LISTENER
+        function listenToUsers() {
+            rtdb.ref('users').on('value', snap => {
+                const users = snap.val() || {};
+                usersCache = Object.keys(users).map(key => ({ uid: key, ...users[key] }));
+                filterUsers(); 
+                // Re-render topups if user data changes (for names)
+                // (Optional: call renderTopupList if topup data exists)
+            });
+        }
+
+        // 4. TOPUP REQUESTS LISTENER (NEW)
+        function listenToTopups() {
+            rtdb.ref('topup_requests').on('value', snap => {
+                const data = snap.val() || {};
+                const requests = Object.entries(data)
+                    .map(([key, val]) => ({ id: key, ...val }))
+                    .filter(item => item.status === 'pending') // Only show pending
+                    .sort((a,b) => a.timestamp - b.timestamp); // Oldest first
+                
+                renderTopupList(requests);
+            });
+        }
+
+        // RENDER TOPUP TABLE
+        function renderTopupList(requests) {
+            const list = document.getElementById('topup-list');
+            list.innerHTML = '';
+            
+            if (requests.length === 0) {
+                list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:20px; color:#666;">No pending requests.</td></tr>';
+                return;
+            }
+
+            requests.forEach(req => {
+                // Try to find username from cache
+                let username = req.uid;
+                const userObj = usersCache.find(u => u.uid === req.uid);
+                if (userObj && userObj.username) {
+                    username = `<span style="color:#fff; font-weight:bold;">${userObj.username}</span> <br><span style="font-size:10px; color:#666;">(${req.uid})</span>`;
+                }
+
+                const date = new Date(req.timestamp).toLocaleString('th-TH');
+                
+                list.innerHTML += `
+                    <tr>
+                        <td>${date}</td>
+                        <td>${username}</td>
+                        <td><a href="${req.link}" target="_blank" style="color:var(--accent); text-decoration:underline; font-size:12px; font-family:'JetBrains Mono';">Open Link <i class="fa-solid fa-arrow-up-right-from-square"></i></a></td>
+                        <td><span class="stock-pill wait">PENDING</span></td>
+                        <td style="text-align:right;">
+                            <div style="display:flex; justify-content:flex-end; gap:5px; align-items:center;">
+                                <input type="number" id="amount-${req.id}" placeholder="Amount" style="width:80px; padding:5px; height:32px; background:#000; border:1px solid #444; border-radius:4px; color:#fff; text-align:center;">
+                                <button class="btn-icon edit" onclick="confirmTopup('${req.id}', '${req.uid}')" title="Approve"><i class="fa-solid fa-check"></i></button>
+                                <button class="btn-icon delete" onclick="rejectTopup('${req.id}')" title="Reject"><i class="fa-solid fa-xmark"></i></button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // ACTION: CONFIRM TOPUP
+        async function confirmTopup(reqId, uid) {
+            const amountInput = document.getElementById(`amount-${reqId}`);
+            const amount = parseInt(amountInput.value);
+
+            if (!amount || amount <= 0) {
+                alert("Please enter a valid amount.");
+                return;
+            }
+
+            if(!confirm(`Confirm Topup ${amount} Points for this user?`)) return;
+
+            try {
+                // 1. Add Points (Transaction)
+                const userRef = rtdb.ref(`users/${uid}/points`);
+                await userRef.transaction(current => (current || 0) + amount);
+
+                // 2. Update Request Status
+                await rtdb.ref(`topup_requests/${reqId}`).update({
+                    status: 'completed',
+                    amount: amount,
+                    processed_at: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                // 3. Log History (Optional: Add to topup_history for user visibility if needed)
+                
+                alert("Topup Successful!");
+
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + e.message);
+            }
+        }
+
+        // ACTION: REJECT TOPUP
+        async function rejectTopup(reqId) {
+            if(!confirm("Reject this request?")) return;
+            await rtdb.ref(`topup_requests/${reqId}`).update({
+                status: 'rejected',
+                processed_at: firebase.database.ServerValue.TIMESTAMP
+            });
+        }
+
+        function filterUsers() {
+            const input = document.getElementById('user-search-input').value.toLowerCase();
+            const tbody = document.getElementById('all-users-list');
+            tbody.innerHTML = '';
+
+            const filtered = usersCache.filter(u => 
+                (u.username || '').toLowerCase().includes(input)
+            );
+
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#666;">No users found.</td></tr>';
+                return;
+            }
+
+            filtered.forEach(u => {
+                const roleColor = u.role === 'admin' ? '#ff0000' : '#00e676';
+                tbody.innerHTML += `
+                    <tr>
+                        <td style="font-weight:bold; color:#fff;">${u.username || 'Unknown'}</td>
+                        <td><span style="color:${roleColor}; font-size:11px; font-weight:bold; text-transform:uppercase; border:1px solid ${roleColor}; padding:2px 6px; border-radius:4px;">${u.role || 'member'}</span></td>
+                        <td style="font-family:'JetBrains Mono'; color:var(--gold);">${(u.points || 0).toLocaleString()} P</td>
+                        <td style="text-align:right;">
+                            <button class="btn-icon edit" onclick="openEditUser('${u.uid}')"><i class="fa-solid fa-pen-to-square"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        async function openEditUser(uid) {
+            currentTargetUid = uid;
+            const user = usersCache.find(u => u.uid === uid);
+            if (!user) return;
+
+            document.getElementById('edit-name').value = user.username;
+            document.getElementById('edit-role').value = user.role || 'members';
+            document.getElementById('edit-points').value = user.points || 0;
+
+            const hist = document.getElementById('user-history');
+            hist.innerHTML = '<div style="text-align:center; color:#666; padding:10px;">Loading history...</div>';
+            document.getElementById('edit-user-modal').classList.add('active');
+
+            try {
+                const snap = await rtdb.ref('Keys')
+                    .orderByChild('sold_to')
+                    .equalTo(uid)
+                    .once('value');
+                
+                const data = snap.val();
+                hist.innerHTML = '';
+
+                if (!data) {
+                    hist.innerHTML = '<div style="color:#666; font-size:12px; text-align:center; padding:10px;">No purchase history</div>';
+                    return;
+                }
+
+                const items = Object.entries(data)
+                    .map(([key, val]) => ({ key, ...val }))
+                    .sort((a, b) => b.sold_at - a.sold_at);
+
+                items.forEach(i => {
+                    const dateStr = i.sold_at ? new Date(i.sold_at).toLocaleDateString('th-TH') + ' ' + new Date(i.sold_at).toLocaleTimeString('th-TH') : 'Unknown';
+                    hist.innerHTML += `
+                        <div class="history-item">
+                            <div>
+                                <div style="color:#fff; font-weight:bold;">${i.product_name || 'Key'}</div>
+                                <div style="color:#666; font-size:10px;">${dateStr}</div>
+                            </div>
+                            <div class="history-key">${i.key}</div>
+                        </div>
+                    `;
+                });
+
+            } catch (error) {
+                console.error("History Error:", error);
+                hist.innerHTML = '<div style="color:#ff4444; text-align:center;">Failed to load history</div>';
+            }
+        }
+
+        function closeModal(id) {
+            document.getElementById(id).classList.remove('active');
+        }
+
+        async function saveUserData() {
+            if(!currentTargetUid) return;
+            await rtdb.ref(`users/${currentTargetUid}`).update({
+                role: document.getElementById('edit-role').value,
+                points: parseInt(document.getElementById('edit-points').value)
+            });
+            alert("User data updated successfully!");
+            closeModal('edit-user-modal');
+        }
+
+        // --- HELPERS ---
+        function normalizeDuration(label) {
+            if (!label) return 'unknown';
+            let l = String(label).toUpperCase().replace(/\s/g, ''); 
+            if(l.includes('1H') || l.includes('6H') || l.includes('12H')) return '1h'; 
+            if(l.includes('24H') || l.includes('1DAY') || l.includes('3D')) return '24h'; if(l.includes('3D')) return '3d'; 
+            if(l.includes('7D') || l.includes('1WEEK')) return '7d'; if(l.includes('30D') || l.includes('1MON')) return '30d'; 
+            if(l.includes('LIFE') || l.includes('PERM')) return 'permanent'; return l; 
+        }
+
+        function getDisplayDuration(code) {
+            const map = { '1h':'1 HOUR','6h':'6 HOURS','12h':'12 HOURS','24h':'24 HOURS','3d':'3 DAYS','7d':'7 DAYS','30d':'30 DAYS','permanent':'LIFETIME' };
+            return map[code] || code.toUpperCase();
+        }
+
+        function renderTable() {
+            const list = document.getElementById('prod-list');
+            list.innerHTML = '';
+            if(productsCache.length === 0) { list.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:30px; color:#666;">No products found. Add one above.</td></tr>'; return; }
+
+            productsCache.forEach(p => {
+                const count = stockData[p.duration] || 0;
+                const badgeClass = count > 0 ? 'ok' : 'low';
+                const badgeText = count > 0 ? `${count} Available` : 'Out of Stock';
+                
+                list.innerHTML += `
+                    <tr>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:8px;">
+                                <button class="btn-icon edit" onclick="startEdit('${p.id}')"><i class="fa-solid fa-pen"></i></button>
+                                <div style="font-weight:600; color:#fff;">${p.name}</div>
+                            </div>
+                        </td>
+                        <td><span style="background:#222; padding:3px 8px; border-radius:4px; font-size:10px; color:#aaa; font-weight:bold;">${getDisplayDuration(p.duration)}</span></td>
+                        <td><span class="stock-pill ${badgeClass}">${badgeText}</span></td>
+                        <td style="color:var(--gold); font-weight:bold; font-family:'JetBrains Mono'">${p.price} P</td>
+                        <td style="text-align:right;">
+                            <button class="btn-icon delete" onclick="deleteProduct('${p.id}')"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        function addProduct() {
+            const n=document.getElementById('p-name').value;
+            const p=parseInt(document.getElementById('p-price').value);
+            const d=document.getElementById('p-duration').value;
+            const i=document.getElementById('p-icon').value;
+            const t=document.getElementById('p-tag').value;
+
+            if(!n || !p) return alert("Please fill Name and Price");
+
+            if (editingProductId) {
+                rtdb.ref(`shop_products/${editingProductId}`).update({ name:n, price:p, duration:d, icon:i, tag:t })
+                    .then(() => { cancelEditMode(); alert("Product Updated!"); });
+            } else {
+                rtdb.ref('shop_products').push({ name:n, price:p, duration:d, icon:i, tag:t });
+                clearForm();
+            }
+        }
+
+        function startEdit(id) {
+            const p = productsCache.find(prod => prod.id === id);
+            if (!p) return;
+            editingProductId = id;
+            document.getElementById('p-name').value = p.name;
+            document.getElementById('p-price').value = p.price;
+            document.getElementById('p-duration').value = p.duration;
+            document.getElementById('p-icon').value = p.icon;
+            document.getElementById('p-tag').value = p.tag || '';
+            const btn = document.getElementById('btn-submit-prod');
+            btn.innerText = "UPDATE ITEM"; btn.classList.add('btn-update');
+            document.getElementById('form-header').innerHTML = '<i class="fa-solid fa-pen-to-square"></i> EDIT PRODUCT';
+            document.getElementById('btn-cancel-edit').style.display = 'flex';
+            document.querySelector('.container').scrollIntoView({ behavior: 'smooth' });
+        }
+
+        function cancelEditMode() {
+            editingProductId = null; clearForm();
+            const btn = document.getElementById('btn-submit-prod');
+            btn.innerText = "ADD ITEM"; btn.classList.remove('btn-update');
+            document.getElementById('form-header').innerHTML = '<i class="fa-solid fa-circle-plus"></i> ADD NEW PRODUCT';
+            document.getElementById('btn-cancel-edit').style.display = 'none';
+        }
+
+        function clearForm() {
+            document.getElementById('p-name').value = '';
+            document.getElementById('p-price').value = '';
+            document.getElementById('p-tag').value = '';
+        }
+
+        function deleteProduct(id) { 
+            if(confirm("Are you sure you want to delete this product?")) {
+                rtdb.ref(`shop_products/${id}`).remove(); 
+                if (editingProductId === id) cancelEditMode();
+            }
+        }
+
+        function switchTab(t) {
+            document.querySelectorAll('.tab-content').forEach(e=>e.classList.remove('active'));
+            document.querySelectorAll('.tab-btn').forEach(e=>e.classList.remove('active'));
+            document.getElementById('tab-'+t).classList.add('active');
+            event.currentTarget.classList.add('active');
+            
+            if (t === 'users' && usersCache.length === 0) {
+                listenToUsers();
+            }
+        }
+    </script>
+</body>
+</html>
+
+
