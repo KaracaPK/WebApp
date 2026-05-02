@@ -215,6 +215,38 @@
             display: flex; justify-content: space-between; align-items: center; font-size: 12px;
         }
         .history-key { font-family: 'JetBrains Mono'; color: var(--accent); }
+
+        /* FILTER BUTTON STYLES */
+        .filter-btn {
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border); color: #888;
+            padding: 12px 16px; border-radius: 8px; cursor: pointer; transition: 0.2s;
+            font-family: 'Poppins'; font-size: 12px; font-weight: 600; display: flex; align-items: center; gap: 8px;
+            height: 45px; white-space: nowrap;
+        }
+        .filter-btn:hover { border-color: #555; color: #fff; background: rgba(255,255,255,0.08); }
+        .filter-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(255,0,0,0.08); }
+
+        /* FILTER MODAL */
+        .filter-modal {
+            position: absolute; top: 100%; right: 0; background: var(--bg-card); border: 1px solid var(--border);
+            border-radius: 12px; padding: 15px; min-width: 280px; z-index: 500; display: none;
+            box-shadow: 0 8px 24px rgba(0,0,0,0.3); margin-top: 8px;
+        }
+        .filter-modal.active { display: block; }
+        .filter-modal .filter-group { margin-bottom: 16px; }
+        .filter-modal .filter-group:last-child { margin-bottom: 0; }
+        .filter-modal label { display: block; font-size: 10px; color: var(--text-muted); margin-bottom: 8px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px; }
+        .filter-modal select { width: 100%; background: #0a0a0e; border: 1px solid var(--border); color: #fff; padding: 10px; border-radius: 6px; font-family: 'Kanit'; font-size: 12px; cursor: pointer; }
+        .filter-modal select:focus { border-color: var(--accent); outline: none; }
+        .filter-modal .radio-group { display: flex; gap: 12px; }
+        .filter-modal .radio-item { display: flex; align-items: center; gap: 6px; cursor: pointer; flex: 1; }
+        .filter-modal .radio-item input[type="radio"] { cursor: pointer; }
+        .filter-modal .radio-item label { margin: 0; flex: 1; cursor: pointer; }
+        .filter-modal .btn-reset { width: 100%; padding: 8px; background: #1a1a1a; border: 1px solid #333; color: #888; border-radius: 6px; cursor: pointer; transition: 0.2s; font-size: 11px; font-weight: 700; }
+        .filter-modal .btn-reset:hover { background: #222; color: #fff; border-color: #444; }
+
+        .search-filter-container { position: relative; display: flex; gap: 10px; align-items: flex-start; }
+        .search-filter-container .search-container { flex: 1; }
     </style>
 </head>
 <body>
@@ -262,6 +294,7 @@
             <button class="tab-btn active" onclick="switchTab('products')">PRODUCTS MANAGER</button>
             <button class="tab-btn" onclick="switchTab('users')">USER MANAGER</button>
             <button class="tab-btn" onclick="switchTab('topups')"><i class="fa-solid fa-money-bill-transfer"></i> TOPUP REQUESTS</button>
+            <button class="tab-btn" onclick="switchTab('codes')"><i class="fa-solid fa-ticket"></i> CODE MANAGER</button>
         </div>
 
         <!-- TAB 1: PRODUCTS -->
@@ -311,9 +344,40 @@
         <div id="tab-users" class="tab-content">
             <div class="card">
                 <div class="card-header"><i class="fa-solid fa-users"></i> USER MANAGEMENT</div>
-                <div class="search-container">
-                    <input type="text" id="user-search-input" placeholder="Search by Username..." onkeyup="filterUsers()">
-                    <i class="fa-solid fa-magnifying-glass"></i>
+                <div class="search-filter-container">
+                    <div class="search-container" style="flex: 1;">
+                        <input type="text" id="user-search-input" placeholder="Search by Username..." onkeyup="filterUsers()">
+                        <i class="fa-solid fa-magnifying-glass"></i>
+                    </div>
+                    <div style="position: relative;">
+                        <button class="filter-btn" id="filter-toggle-btn" onclick="toggleFilterModal()">
+                            <i class="fa-solid fa-sliders"></i>
+                        </button>
+                        <div class="filter-modal" id="filter-modal">
+                            <div class="filter-group">
+                                <label>Sort By:</label>
+                                <select id="filter-sort-by" onchange="applyFilters()">
+                                    <option value="account_age">Account Age (Account Age)</option>
+                                    <option value="role">Role (Admin > VIP > Member)</option>
+                                    <option value="points">Points (Points)</option>
+                                </select>
+                            </div>
+                            <div class="filter-group">
+                                <label>Sort Order:</label>
+                                <div class="radio-group">
+                                    <div class="radio-item" style="flex: 1;">
+                                        <input type="radio" id="sort-desc" name="sort-order" value="desc" checked onchange="applyFilters()">
+                                        <label for="sort-desc" style="margin: 0; cursor: pointer;">High → Low</label>
+                                    </div>
+                                    <div class="radio-item" style="flex: 1;">
+                                        <input type="radio" id="sort-asc" name="sort-order" value="asc" onchange="applyFilters()">
+                                        <label for="sort-asc" style="margin: 0; cursor: pointer;">Low → High</label>
+                                    </div>
+                                </div>
+                            </div>
+                            <button class="btn-reset" onclick="resetFilters()">Reset Filters</button>
+                        </div>
+                    </div>
                 </div>
                 <div class="table-container" style="max-height: 600px; overflow-y: auto;">
                     <table class="product-table">
@@ -356,6 +420,132 @@
             </div>
         </div>
 
+        <!-- TAB 4: CODE MANAGER -->
+        <div id="tab-codes" class="tab-content">
+            <div class="card">
+                <div class="card-header"><i class="fa-solid fa-ticket"></i> CREATE NEW CODE</div>
+                <div class="form-grid">
+                    <div class="input-group"><label>Code</label><input type="text" id="code-input" placeholder="CODE123" style="text-transform:uppercase;"></div>
+                    <div class="input-group">
+                        <label>จำนวนสูงสุดที่ได้ (Max Points)</label>
+                        <input type="number" id="code-points" placeholder="100" min="1">
+                    </div>
+                    <div class="input-group">
+                        <label>จำนวนที่ได้ (Actual Points)</label>
+                        <input type="number" id="code-actual-points" placeholder="100" min="0">
+                    </div>
+                    <div class="input-group"><label>Max Users (จำนวนคนสูงสุด)</label><input type="number" id="code-max-users" placeholder="10" value="10"></div>
+                    <div class="input-group"><label>Max Uses Per User (ต่อคน)</label><input type="number" id="code-max-uses" placeholder="1" value="1"></div>
+                    <div class="input-group"><label>Success Message</label><input type="text" id="code-message" placeholder="ยินดีด้วย! คุณได้รับ..."></div>
+                    <div class="input-group">
+                        <label>สุ่ม Points (Random)</label>
+                        <div style="display:flex; align-items:center; gap:12px; height:45px; background:#0a0a0e; border:1px solid var(--border); border-radius:8px; padding:0 15px;">
+                            <label class="toggle-switch" style="display:flex; align-items:center; gap:10px; cursor:pointer; user-select:none;">
+                                <input type="checkbox" id="code-random" style="width:auto; background:none; border:none; padding:0; cursor:pointer;">
+                                <span id="random-label" style="font-size:12px; color:#888;">ปิดอยู่</span>
+                            </label>
+                            <span style="font-size:10px; color:#555; margin-left:auto;">เปิดถ้า actual &lt; max</span>
+                        </div>
+                    </div>
+                    <div class="input-group" style="display:flex; gap:10px;">
+                        <label>&nbsp;</label>
+                        <button class="btn-action" onclick="addNewCode()">CREATE CODE</button>
+                    </div>
+                </div>
+                <div id="random-hint" style="display:none; margin-top:12px; padding:10px 14px; background:rgba(255,193,7,0.08); border:1px solid rgba(255,193,7,0.25); border-radius:8px; font-size:12px; color:#ffc107;">
+                    <i class="fa-solid fa-dice"></i> <strong>โหมดสุ่ม:</strong> แต่ละครั้งที่ใช้โค้ด ผู้รับจะได้ points สุ่มระหว่าง <strong id="random-min-display">0</strong> – <strong id="random-max-display">0</strong> points
+                </div>
+            </div>
+
+            <div class="card">
+                <div class="card-header"><i class="fa-solid fa-list"></i> CODE LIST</div>
+                <div class="table-container">
+                    <table class="product-table">
+                        <thead>
+                            <tr>
+                                <th>Code</th>
+                                <th>Points (Max)</th>
+                                <th>Actual / Random</th>
+                                <th>Users Used / Max</th>
+                                <th>Per User</th>
+                                <th>Message</th>
+                                <th>Status</th>
+                                <th style="text-align:right;">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="code-list">
+                            <tr><td colspan="8" style="text-align:center; padding:20px; color:#666;">Loading codes...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- VIEW CODE USERS MODAL -->
+    <div id="view-code-users-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width:600px;">
+            <!-- Header -->
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:14px;">
+                <div>
+                    <div class="card-header" style="margin-bottom:4px; font-size:16px;"><i class="fa-solid fa-eye"></i> ผู้ใช้โค้ด: <span id="view-code-name" style="color:var(--accent); font-family:'JetBrains Mono';"></span></div>
+                    <div style="font-size:11px; color:#666;">แสดงรายชื่อผู้ที่ใช้โค้ดนี้แล้ว</div>
+                </div>
+                <button onclick="closeModal('view-code-users-modal')" style="background:#1a1a22; border:1px solid #333; color:#888; width:34px; height:34px; border-radius:8px; cursor:pointer; display:flex; align-items:center; justify-content:center;">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <!-- Stats row -->
+            <div id="code-users-stats" style="display:none; gap:10px; margin-bottom:14px; display:flex;">
+                <div style="flex:1; background:#0d0d14; border:1px solid #252530; border-radius:10px; padding:10px 14px;">
+                    <div style="font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.5px;">ผู้ใช้ทั้งหมด</div>
+                    <div id="cu-stat-total" style="font-size:20px; font-weight:800; color:#fff; font-family:'JetBrains Mono';">0</div>
+                </div>
+                <div style="flex:1; background:#0d0d14; border:1px solid #252530; border-radius:10px; padding:10px 14px;">
+                    <div style="font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.5px;">ใช้รวมทั้งหมด</div>
+                    <div id="cu-stat-uses" style="font-size:20px; font-weight:800; color:#ffc107; font-family:'JetBrains Mono';">0</div>
+                </div>
+                <div style="flex:1; background:#0d0d14; border:1px solid #252530; border-radius:10px; padding:10px 14px;">
+                    <div style="font-size:10px; color:#555; text-transform:uppercase; letter-spacing:.5px;">รางวัลรวมทั้งหมด</div>
+                    <div id="cu-stat-reward" style="font-size:20px; font-weight:800; color:#00e676; font-family:'JetBrains Mono';">0 P</div>
+                </div>
+            </div>
+
+            <!-- Search + Sort bar -->
+            <div style="display:flex; gap:8px; margin-bottom:12px; align-items:center;">
+                <div class="search-container" style="flex:1; margin-bottom:0;">
+                    <input type="text" id="cu-search-input" placeholder="ค้นหาชื่อผู้ใช้..." oninput="filterCodeUsers()">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                </div>
+                <div style="position:relative;">
+                    <button class="filter-btn" id="cu-filter-btn" onclick="toggleCUFilter()" title="Sort & Filter">
+                        <i class="fa-solid fa-sliders"></i>
+                    </button>
+                    <div class="filter-modal" id="cu-filter-modal" style="right:0; min-width:200px;">
+                        <div class="filter-group">
+                            <label>เรียงตาม</label>
+                            <select id="cu-sort-by" onchange="filterCodeUsers()">
+                                <option value="last_used">ใช้ล่าสุด</option>
+                                <option value="use_count">จำนวนครั้ง (มาก→น้อย)</option>
+                                <option value="total_reward">รางวัลรวม (มาก→น้อย)</option>
+                                <option value="username">ชื่อ (A→Z)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Result count -->
+            <div id="cu-result-count" style="font-size:11px; color:#555; margin-bottom:8px;"></div>
+
+            <!-- List -->
+            <div id="code-users-list" style="max-height:360px; overflow-y:auto; padding-right:4px;">
+                <div style="text-align:center; color:#666; padding:20px;">Loading...</div>
+            </div>
+            <button class="btn-full btn-cancel" style="margin-top:15px;" onclick="closeModal('view-code-users-modal')">CLOSE</button>
+        </div>
     </div>
 
     <!-- EDIT USER MODAL -->
@@ -364,14 +554,24 @@
             <div class="card-header" style="justify-content:center; margin-bottom:20px; font-size:18px;"><i class="fa-solid fa-user-pen"></i> EDIT USER</div>
             
             <div class="form-grid" style="grid-template-columns: 1fr; gap: 15px;">
-                <div class="input-group"><label>USERNAME</label><input type="text" id="edit-name" readonly style="color:#888; background:#111;"></div>
-                <div class="input-group"><label>ROLE</label>
+                <div class="input-group">
+                    <label>USERNAME</label>
+                    <input type="text" id="edit-name" placeholder="Username">
+                </div>
+
+                <div class="input-group">
+                    <label>ROLE</label>
                     <select id="edit-role">
                         <option value="members">Member</option>
+                        <option value="vip">VIP</option>
                         <option value="admin">Admin</option>
                     </select>
                 </div>
-                <div class="input-group"><label>POINTS BALANCE</label><input type="number" id="edit-points"></div>
+
+                <div class="input-group">
+                    <label>POINTS</label>
+                    <input type="number" id="edit-points" placeholder="Points">
+                </div>
             </div>
             
             <button class="btn-full" style="background:#00e676; color:#000; margin-top:20px;" onclick="saveUserData()">SAVE CHANGES</button>
@@ -398,6 +598,13 @@
         let usersCache = []; 
         let currentTargetUid = null;
         let editingProductId = null;
+        
+        // FILTER STATE
+        let filterState = {
+            sortBy: 'account_age',
+            sortOrder: 'desc',
+            searchText: ''
+        };
 
         // AUTH & INIT
         auth.onAuthStateChanged(async (user) => {
@@ -413,6 +620,7 @@
                     listenToStock();
                     listenToUsers(); // Load users immediately for caching names
                     listenToTopups(); // NEW Listener
+                    listenToCodes(); // NEW Listener for codes
                 } else {
                     alert("ACCESS DENIED"); window.location.href = 'index.html';
                 }
@@ -439,7 +647,7 @@
                 Object.values(keys).forEach(k => {
                     total++;
                     if(k.is_sold) sold++;
-                    else if(k.active) {
+                    else if(k.active && k.activated === false) {
                         avail++;
                         let type = normalizeDuration(k.duration_label);
                         stockData[type] = (stockData[type] || 0) + 1;
@@ -559,14 +767,352 @@
             });
         }
 
+        // 4. CODES LISTENER
+        function listenToCodes() {
+            rtdb.ref('code').on('value', snap => {
+                const codes = snap.val() || {};
+                const codeList = Object.keys(codes).map(key => ({ id: key, ...codes[key] }));
+                renderCodeList(codeList);
+            });
+        }
+
+        // RENDER CODE TABLE
+        function renderCodeList(codeList) {
+            const list = document.getElementById('code-list');
+            list.innerHTML = '';
+
+            if (codeList.length === 0) {
+                list.innerHTML = '<tr><td colspan="8" style="text-align:center; padding:20px; color:#666;">No codes created yet.</td></tr>';
+                return;
+            }
+
+            codeList.forEach(code => {
+                const usedCount  = parseInt(code.used_count) || 0;
+                const maxUsers   = parseInt(code.max_users) || 0;
+                const maxPerUser = parseInt(code.max_uses_per_user) || 1;
+                const maxPts     = parseInt(code.points) || 0;
+                const actualPts  = (code.actual_points !== undefined && code.actual_points !== null)
+                                    ? parseInt(code.actual_points) : maxPts;
+                const isRandom   = code.random === true;
+                const isFull     = maxUsers > 0 && usedCount >= maxUsers;
+
+                const status = isFull
+                    ? '<span class="stock-pill" style="background:rgba(255,68,68,0.1);color:#ff4444;border:1px solid rgba(255,68,68,0.2);">FULL</span>'
+                    : '<span class="stock-pill ok">ACTIVE</span>';
+
+                let actualDisplay;
+                if (actualPts >= maxPts) {
+                    actualDisplay = `<span style="color:#00e676;">${maxPts}</span> <span style="font-size:10px;color:#555;">(fixed max)</span>`;
+                } else if (isRandom) {
+                    actualDisplay = `<span style="color:#ffc107;">${actualPts}–${maxPts}</span> <span style="font-size:10px;color:#9c27b0;"><i class="fa-solid fa-dice"></i> random</span>`;
+                } else {
+                    actualDisplay = `<span style="color:#29b6f6;">${actualPts}</span> <span style="font-size:10px;color:#555;">(fixed)</span>`;
+                }
+
+                list.innerHTML += `
+                    <tr>
+                        <td><span style="font-family:'JetBrains Mono'; color:var(--accent); font-weight:bold;">${code.id}</span></td>
+                        <td><strong style="color:#00e676;">${maxPts}</strong></td>
+                        <td>${actualDisplay}</td>
+                        <td>
+                            <div style="display:flex; align-items:center; gap:6px;">
+                                <strong style="color:#ffc107;">${usedCount}</strong> / ${maxUsers}
+                                <button class="btn-icon" onclick="viewCodeUsers('${code.id}')" title="ดูรายชื่อผู้ใช้"
+                                    style="width:26px;height:26px;background:rgba(33,150,243,0.1);border:1px solid rgba(33,150,243,0.3);color:#42a5f5;">
+                                    <i class="fa-solid fa-eye" style="font-size:11px;"></i>
+                                </button>
+                            </div>
+                        </td>
+                        <td style="font-size:12px; color:#aaa;">${maxPerUser}x / คน</td>
+                        <td style="font-size:12px; max-width:140px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${code.success_message || '-'}</td>
+                        <td>${status}</td>
+                        <td style="text-align:right;">
+                            <button class="btn-icon delete" onclick="deleteCode('${code.id}')" title="Delete"><i class="fa-solid fa-trash"></i></button>
+                        </td>
+                    </tr>
+                `;
+            });
+        }
+
+        // CREATE NEW CODE
+        async function addNewCode() {
+            const code       = document.getElementById('code-input').value.toUpperCase().trim();
+            const maxPoints  = parseInt(document.getElementById('code-points').value);
+            const actualPts  = parseInt(document.getElementById('code-actual-points').value);
+            const maxUsers   = parseInt(document.getElementById('code-max-users').value);
+            const maxPerUser = parseInt(document.getElementById('code-max-uses').value);
+            const message    = document.getElementById('code-message').value.trim();
+            const isRandom   = document.getElementById('code-random').checked;
+
+            if (!code || !maxPoints || maxPoints <= 0 || isNaN(maxUsers) || maxUsers <= 0 || isNaN(maxPerUser) || maxPerUser <= 0) {
+                alert("กรุณากรอกข้อมูลให้ครบ (Code, Max Points, Max Users, Max Per User)");
+                return;
+            }
+
+            // actual_points ถ้าใส่มากกว่า max ก็จะได้แค่ max
+            const finalActual = (!isNaN(actualPts) && actualPts > 0) ? Math.min(actualPts, maxPoints) : maxPoints;
+            // random ใช้ได้เฉพาะเมื่อ actual < max
+            const finalRandom = (finalActual < maxPoints) ? isRandom : false;
+
+            try {
+                const check = await rtdb.ref(`code/${code}`).once('value');
+                if (check.exists()) { alert("Code นี้มีอยู่แล้ว!"); return; }
+
+                await rtdb.ref(`code/${code}`).set({
+                    code:             code,
+                    points:           maxPoints,
+                    actual_points:    finalActual,
+                    random:           finalRandom,
+                    max_users:        maxUsers,
+                    max_uses_per_user: maxPerUser,
+                    success_message:  message || `ยินดีด้วย! คุณได้รับ!`,
+                    used_count:       0,
+                    created_at:       firebase.database.ServerValue.TIMESTAMP
+                });
+
+                alert(`สร้างโค้ด ${code} สำเร็จ!`);
+                document.getElementById('code-input').value = '';
+                document.getElementById('code-points').value = '';
+                document.getElementById('code-actual-points').value = '';
+                document.getElementById('code-max-users').value = '10';
+                document.getElementById('code-max-uses').value = '1';
+                document.getElementById('code-message').value = '';
+                document.getElementById('code-random').checked = false;
+                document.getElementById('random-label').innerText = 'ปิดอยู่';
+                document.getElementById('random-hint').style.display = 'none';
+
+            } catch (e) {
+                console.error(e);
+                alert("Error: " + e.message);
+            }
+        }
+
+        // DELETE CODE
+        async function deleteCode(code) {
+            if (!confirm(`ลบโค้ด ${code}?`)) return;
+            try {
+                await rtdb.ref(`code/${code}`).remove();
+                alert("ลบโค้ดสำเร็จ!");
+            } catch (e) {
+                alert("Error: " + e.message);
+            }
+        }
+
+        // VIEW CODE USERS
+        // เก็บ data ไว้ใน memory สำหรับ filter ไม่ต้อง fetch ซ้ำ
+        let _cuAllUsers = [];
+
+        async function viewCodeUsers(codeId) {
+            _cuAllUsers = [];
+            document.getElementById('view-code-name').innerText = codeId;
+            document.getElementById('code-users-list').innerHTML = '<div style="text-align:center;color:#666;padding:20px;"><i class="fa-solid fa-spinner fa-spin"></i> Loading...</div>';
+            document.getElementById('cu-search-input').value = '';
+            document.getElementById('cu-sort-by').value = 'last_used';
+            document.getElementById('cu-result-count').innerText = '';
+            document.getElementById('cu-filter-modal').classList.remove('active');
+            document.getElementById('cu-filter-btn').classList.remove('active');
+            document.getElementById('view-code-users-modal').classList.add('active');
+
+            try {
+                const snap = await rtdb.ref(`code/${codeId}/users_used`).once('value');
+                const data = snap.val();
+                const container = document.getElementById('code-users-list');
+
+                if (!data) {
+                    document.getElementById('code-users-stats').style.display = 'none';
+                    container.innerHTML = '<div style="text-align:center;color:#666;padding:20px;"><i class="fa-solid fa-users-slash"></i> ยังไม่มีผู้ใช้โค้ดนี้</div>';
+                    return;
+                }
+
+                _cuAllUsers = Object.values(data);
+
+                // คำนวณ stats รวม
+                const totalUses   = _cuAllUsers.reduce((s, u) => s + (u.use_count || 0), 0);
+                const totalReward = _cuAllUsers.reduce((s, u) => s + (u.total_reward || 0), 0);
+                document.getElementById('cu-stat-total').innerText  = _cuAllUsers.length;
+                document.getElementById('cu-stat-uses').innerText   = totalUses;
+                document.getElementById('cu-stat-reward').innerText = totalReward + ' P';
+                document.getElementById('code-users-stats').style.display = 'flex';
+
+                filterCodeUsers();
+
+            } catch (e) {
+                console.error(e);
+                document.getElementById('code-users-list').innerHTML = `<div style="color:#ff4444;text-align:center;padding:20px;">Error: ${e.message}</div>`;
+            }
+        }
+
+        function filterCodeUsers() {
+            const search  = (document.getElementById('cu-search-input').value || '').toLowerCase().trim();
+            const sortBy  = document.getElementById('cu-sort-by').value;
+            const container = document.getElementById('code-users-list');
+
+            // กรองตาม search
+            let filtered = _cuAllUsers.filter(u => {
+                if (!search) return true;
+                return (u.username || '').toLowerCase().includes(search) ||
+                       (u.uid     || '').toLowerCase().includes(search);
+            });
+
+            // เรียงลำดับ
+            filtered.sort((a, b) => {
+                if (sortBy === 'use_count')   return (b.use_count    || 0) - (a.use_count    || 0);
+                if (sortBy === 'total_reward') return (b.total_reward || 0) - (a.total_reward || 0);
+                if (sortBy === 'username')     return (a.username || '').localeCompare(b.username || '');
+                return (b.last_used_at || 0) - (a.last_used_at || 0); // last_used (default)
+            });
+
+            // แสดงจำนวน
+            const countEl = document.getElementById('cu-result-count');
+            if (search) {
+                countEl.innerText = `พบ ${filtered.length} จาก ${_cuAllUsers.length} ผู้ใช้`;
+            } else {
+                countEl.innerText = `ผู้ใช้ทั้งหมด ${_cuAllUsers.length} คน`;
+            }
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<div style="text-align:center;color:#666;padding:30px;">
+                    <i class="fa-solid fa-magnifying-glass" style="font-size:22px;margin-bottom:8px;display:block;"></i>
+                    ไม่พบผู้ใช้ที่ตรงกับ "${search}"
+                </div>`;
+                return;
+            }
+
+            let html = '';
+            for (const u of filtered) {
+                const lastDate = u.last_used_at
+                    ? new Date(u.last_used_at).toLocaleString('th-TH')
+                    : 'ไม่ทราบ';
+
+                // highlight search term
+                const rawName   = u.username || u.uid || 'Unknown';
+                const dispName  = search
+                    ? rawName.replace(new RegExp(`(${search.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')})`, 'gi'),
+                        '<mark style="background:rgba(255,80,80,.25);color:#ff9090;border-radius:3px;padding:0 2px;">$1</mark>')
+                    : rawName;
+
+                let histHTML = '';
+                if (u.history) {
+                    const hist = Object.values(u.history).sort((a,b) => (a.used_at||0) - (b.used_at||0));
+                    histHTML = `<div style="margin-top:8px; padding:8px; background:#0a0a0e; border-radius:6px;">`;
+                    hist.forEach((h, idx) => {
+                        const d = h.used_at ? new Date(h.used_at).toLocaleString('th-TH') : 'ไม่ทราบ';
+                        histHTML += `<div style="display:flex;justify-content:space-between;padding:3px 0;font-size:11px;border-bottom:1px solid #1a1a1a;${idx===hist.length-1?'border-bottom:none;':''}">
+                            <span style="color:#888;">ครั้งที่ ${idx+1} — ${d}</span>
+                            <span style="color:#00e676;font-weight:bold;font-family:'JetBrains Mono';">+${h.reward || 0} P</span>
+                        </div>`;
+                    });
+                    histHTML += `</div>`;
+                }
+
+                html += `
+                    <div style="background:linear-gradient(145deg,#1d1d26,#14141a); border:1px solid #2a2a35; border-radius:12px; padding:14px; margin-bottom:10px;">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; gap:10px;">
+                            <div>
+                                <div style="font-weight:700; color:#fff; font-size:14px;"><i class="fa-solid fa-user" style="color:var(--accent);margin-right:6px;"></i>${dispName}</div>
+                                <div style="font-size:11px; color:#666; margin-top:4px;"><i class="fa-regular fa-clock" style="margin-right:4px;"></i>${lastDate}</div>
+                            </div>
+                            <div style="text-align:right; flex-shrink:0;">
+                                <div style="font-size:10px; color:#888; text-transform:uppercase; letter-spacing:0.5px;">รางวัลรวม</div>
+                                <div style="font-size:18px; font-weight:800; color:#ffc107; font-family:'JetBrains Mono';">+${u.total_reward || 0} P</div>
+                                <div style="font-size:10px; color:#666;">ใช้แล้ว ${u.use_count || 1} ครั้ง</div>
+                            </div>
+                        </div>
+                        ${histHTML}
+                    </div>
+                `;
+            }
+
+            container.innerHTML = html;
+        }
+
+        function toggleCUFilter() {
+            const modal = document.getElementById('cu-filter-modal');
+            const btn   = document.getElementById('cu-filter-btn');
+            const isOpen = modal.classList.toggle('active');
+            btn.classList.toggle('active', isOpen);
+            // ปิด filter modal อื่นถ้ามี
+            if (isOpen) {
+                document.getElementById('filter-modal')?.classList.remove('active');
+                document.getElementById('filter-toggle-btn')?.classList.remove('active');
+            }
+        }
+
+        // ปิด cu-filter-modal เมื่อคลิกนอก
+        document.addEventListener('click', function(e) {
+            const modal = document.getElementById('cu-filter-modal');
+            const btn   = document.getElementById('cu-filter-btn');
+            if (modal && !modal.contains(e.target) && !btn.contains(e.target)) {
+                modal.classList.remove('active');
+                btn.classList.remove('active');
+            }
+        });
+
         function filterUsers() {
             const input = document.getElementById('user-search-input').value.toLowerCase();
+            filterState.searchText = input;
+            applyFilters();
+        }
+
+        function toggleFilterModal() {
+            const modal = document.getElementById('filter-modal');
+            const btn = document.getElementById('filter-toggle-btn');
+            modal.classList.toggle('active');
+            btn.classList.toggle('active');
+        }
+
+        function closeFilterModal() {
+            const modal = document.getElementById('filter-modal');
+            const btn = document.getElementById('filter-toggle-btn');
+            modal.classList.remove('active');
+            btn.classList.remove('active');
+        }
+
+        function applyFilters() {
+            // Get filter values
+            filterState.sortBy = document.getElementById('filter-sort-by').value;
+            filterState.sortOrder = document.querySelector('input[name="sort-order"]:checked').value;
+
             const tbody = document.getElementById('all-users-list');
             tbody.innerHTML = '';
 
-            const filtered = usersCache.filter(u => 
-                (u.username || '').toLowerCase().includes(input)
+            // Filter by search text
+            let filtered = usersCache.filter(u => 
+                (u.username || '').toLowerCase().includes(filterState.searchText) ||
+                (u.uid || '').toLowerCase().includes(filterState.searchText)
             );
+
+            // Sort by selected criteria
+            filtered.sort((a, b) => {
+                let valA, valB;
+
+                switch(filterState.sortBy) {
+                    case 'account_age':
+                        // Assuming created_at exists, fallback to last_used_at
+                        valA = a.created_at || a.last_used_at || 0;
+                        valB = b.created_at || b.last_used_at || 0;
+                        break;
+                    case 'role':
+                        // Role order: admin (0) > vip (1) > members (2)
+                        const roleOrder = { 'admin': 0, 'vip': 1, 'members': 2 };
+                        valA = roleOrder[(a.role || 'members').toLowerCase()] || 2;
+                        valB = roleOrder[(b.role || 'members').toLowerCase()] || 2;
+                        break;
+                    case 'points':
+                        valA = a.points || 0;
+                        valB = b.points || 0;
+                        break;
+                    default:
+                        valA = 0;
+                        valB = 0;
+                }
+
+                if (filterState.sortOrder === 'desc') {
+                    return valB - valA;
+                } else {
+                    return valA - valB;
+                }
+            });
 
             if (filtered.length === 0) {
                 tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding:20px; color:#666;">No users found.</td></tr>';
@@ -574,7 +1120,10 @@
             }
 
             filtered.forEach(u => {
-                const roleColor = u.role === 'admin' ? '#ff0000' : '#00e676';
+                let roleColor = '#00e676'; // default member green
+                if (u.role === 'admin') roleColor = '#ffc107'; // admin gold
+                if (u.role === 'vip') roleColor = '#9c27b0'; // VIP purple
+                
                 tbody.innerHTML += `
                     <tr>
                         <td style="font-weight:bold; color:#fff;">${u.username || 'Unknown'}</td>
@@ -586,6 +1135,20 @@
                     </tr>
                 `;
             });
+
+            closeFilterModal();
+        }
+
+        function resetFilters() {
+            document.getElementById('filter-sort-by').value = 'account_age';
+            document.getElementById('sort-desc').checked = true;
+            document.getElementById('user-search-input').value = '';
+            filterState = {
+                sortBy: 'account_age',
+                sortOrder: 'desc',
+                searchText: ''
+            };
+            applyFilters();
         }
 
         async function openEditUser(uid) {
@@ -761,8 +1324,42 @@
                 listenToUsers();
             }
         }
+
+        // ── Random Toggle Logic ──
+        function updateRandomHint() {
+            const maxPts    = parseInt(document.getElementById('code-points').value) || 0;
+            const actualPts = parseInt(document.getElementById('code-actual-points').value) || 0;
+            const isRandom  = document.getElementById('code-random').checked;
+            const hint      = document.getElementById('random-hint');
+            const label     = document.getElementById('random-label');
+
+            label.innerText = isRandom ? 'เปิดแล้ว' : 'ปิดอยู่';
+            label.style.color = isRandom ? '#00e676' : '#888';
+
+            if (isRandom && actualPts > 0 && maxPts > 0 && actualPts < maxPts) {
+                hint.style.display = 'block';
+                document.getElementById('random-min-display').innerText = actualPts;
+                document.getElementById('random-max-display').innerText = maxPts;
+            } else {
+                hint.style.display = 'none';
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('code-random').addEventListener('change', updateRandomHint);
+            document.getElementById('code-points').addEventListener('input', updateRandomHint);
+            document.getElementById('code-actual-points').addEventListener('input', updateRandomHint);
+
+            // Close filter modal when clicking outside
+            document.addEventListener('click', (e) => {
+                const filterBtn = document.getElementById('filter-toggle-btn');
+                const filterModal = document.getElementById('filter-modal');
+                if (!filterBtn.contains(e.target) && !filterModal.contains(e.target)) {
+                    filterModal.classList.remove('active');
+                    filterBtn.classList.remove('active');
+                }
+            });
+        });
     </script>
 </body>
 </html>
-
-

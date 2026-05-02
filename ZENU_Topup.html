@@ -237,6 +237,8 @@
         @keyframes toastProgress { from { width: 100%; } to { width: 0%; } }
 
     </style>
+<base target="_blank">
+<base target="_blank">
 </head>
 <body>
 
@@ -312,11 +314,8 @@
         // --- ตั้งค่า EmailJS ตรงนี้ ---
         const EMAILJS_SERVICE_ID = "service_xuqrvg4"; 
         const EMAILJS_TEMPLATE_ID = "template_hhmv45n"; 
-        const EMAILJS_PUBLIC_KEY = "7gaavlGnJ9JjhLxb7"; 
-
-        // --- ตั้งค่าอีเมลแอดมิน (สำคัญมาก) ---
-        const FIXED_ADMIN_EMAILS = ["piywatkhonohian@gmail.com"]; 
-
+        const EMAILJS_PUBLIC_KEY = "7gaavlGnJ9JjhLxb7";
+        // --- ดึงอีเมลแอดมินอัตโนมัติจาก Firebase ---
         auth.onAuthStateChanged((user) => {
             if (user) {
                 currentUser = user;
@@ -345,17 +344,31 @@
 
             if (!link) return showToast("กรุณาวางลิ้งค์ซองของขวัญ", "error");
 
-            const urlPattern = /^https?:\/\/gift\.truemoney\.com\/campaign\/\?v=[a-zA-Z0-9]+/;
+            const urlPattern = /^https?:\/\/gift\.truemoney\.com\/campaign\/.*[\?&]v=[a-zA-Z0-9_-]+/;
             if (!urlPattern.test(link)) return showToast("รูปแบบลิ้งค์ไม่ถูกต้อง (ต้องมีรหัส v=...)", "error");
 
             btn.disabled = true;
             btn.innerHTML = '<span class="loader"></span> กำลังส่งข้อมูล...';
 
             try {
-                // 1. Check Duplicate
+                // 1. Check Duplicate — ดึงชื่อคนที่ส่งไปก่อนมาแสดงด้วย
                 const snap = await rtdb.ref('topup_requests').orderByChild('link').equalTo(link).once('value');
                 if (snap.exists()) {
-                    showToast("คุณเคยส่งลิ้งค์นี้ไปแล้ว หรือกำลังรอตรวจสอบ", "error");
+                    // หา record แรกที่ตรง
+                    let prevEntry = null;
+                    snap.forEach(child => { if (!prevEntry) prevEntry = child.val(); });
+
+                    const prevUser   = prevEntry?.username || 'ผู้ใช้คนอื่น';
+                    const prevStatus = prevEntry?.status   || 'pending';
+                    const isMine     = prevEntry?.uid === currentUser.uid;
+
+                    const statusLabel = {
+                        pending:  '⏳ รอตรวจสอบ',
+                        approved: '✅ อนุมัติแล้ว',
+                        rejected: '❌ ถูกปฏิเสธ',
+                    }[prevStatus] || prevStatus;
+
+                    showToast(`ลิ้งค์นี้ถูกส่งไปแล้ว (${statusLabel})`, "error");
                     resetBtn();
                     return;
                 }
@@ -389,17 +402,43 @@
             }
         }
 
+        async function getAdminEmails() {
+            try {
+                const snap = await rtdb.ref('users').orderByChild('role').equalTo('admin').once('value');
+                const admins = [];
+                snap.forEach(child => {
+                    const data = child.val();
+                    if (data && data.email) {
+                        admins.push(data.email);
+                    }
+                });
+                return admins;
+            } catch (err) {
+                console.error("Error fetching admins:", err);
+                return [];
+            }
+        }
+
         async function notifyAdmins(requestLink, requestUser) {
             // เช็คว่า Library โหลดมาไหม
             if (!window.emailjs) {
                 console.error("EmailJS Library not found");
-                alert("ระบบแจ้งเตือน EmailJS โหลดไม่สำเร็จ (แต่บันทึกข้อมูลแล้ว)");
+                showToast("ระบบแจ้งเตือน EmailJS โหลดไม่สำเร็จ (แต่บันทึกข้อมูลแล้ว)", "warning");
                 return;
             }
 
-            const targets = FIXED_ADMIN_EMAILS;
-            
-            console.log("กำลังส่งอีเมลแจ้งเตือน...");
+            // ดึงรายชื่ออีเมลแอดมินจาก Firebase
+            const targets = await getAdminEmails();
+
+            if (targets.length === 0) {
+                console.warn("ไม่พบแอดมินในระบบ");
+                showToast("ไม่พบอีเมลแอดมินในระบบ", "warning");
+                return;
+            }
+
+            console.log("กำลังส่งอีเมลแจ้งเตือนไปยังแอดมิน", targets);
+
+            const websiteUrl = window.location.origin;
 
             for (const email of targets) {
                 const templateParams = {
@@ -408,11 +447,11 @@
                     from_name: requestUser,
                     message: `User: ${requestUser} | Link: ${requestLink}`,
                     link: requestLink,
-                    time: new Date().toLocaleString('th-TH') // เพิ่มตรงนี้เพื่อให้เวลาแสดงในอีเมล
+                    time: new Date().toLocaleString('th-TH'),
+                    website_url: websiteUrl
                 };
 
                 try {
-                    // ส่ง Public Key ไปเป็น Argument ที่ 4
                     const response = await window.emailjs.send(
                         EMAILJS_SERVICE_ID, 
                         EMAILJS_TEMPLATE_ID, 
@@ -422,32 +461,64 @@
                     console.log(`ส่งอีเมลสำเร็จ: ${response.status} ${response.text}`);
                 } catch (error) {
                     console.error("EmailJS Error:", error);
-                    alert("แจ้งเตือน: ส่งอีเมลไม่ผ่าน! " + JSON.stringify(error)); 
+                    showToast(`ส่งอีเมลไป ${email} ไม่สำเร็จ`, "warning"); 
                 }
             }
         }
 
         function listenMyRequests(uid) {
-            rtdb.ref('topup_requests').orderByChild('uid').equalTo(uid).limitToLast(3).on('value', snap => {
+            rtdb.ref('topup_requests').orderByChild('uid').equalTo(uid).on('value', snap => {
                 const list = document.getElementById('my-requests-list');
                 list.innerHTML = '';
                 const data = snap.val();
                 if(!data) {
-                    list.innerHTML = '<div style="text-align:center; color:#666; font-size:12px;">ไม่มีประวัติการแจ้งโอน</div>';
+                    list.innerHTML = '<div style="text-align:center; color:#666; font-size:12px; padding: 20px;">ไม่มีประวัติการแจ้งโอน</div>';
                     return;
                 }
-                const items = Object.values(data).sort((a,b) => b.timestamp - a.timestamp);
+                // แปลงเป็น array และเรียงจากใหม่ -> เก่า
+                const items = Object.entries(data).map(([key, val]) => ({ id: key, ...val }))
+                    .sort((a, b) => (b.timestamp || 0) - (a.timestamp || 0));
+
                 items.forEach(item => {
-                    const date = new Date(item.timestamp).toLocaleTimeString('th-TH', { hour: '2-digit', minute: '2-digit' });
+                    const date = item.timestamp 
+                        ? new Date(item.timestamp).toLocaleString('th-TH', { 
+                            day: '2-digit', month: '2-digit', year: 'numeric',
+                            hour: '2-digit', minute: '2-digit' 
+                          })
+                        : 'ไม่ระบุเวลา';
+
                     let statusClass = 'st-pending';
                     let statusText = 'รอตรวจสอบ';
-                    if(item.status === 'completed') { statusClass = 'st-completed'; statusText = `สำเร็จ (+${item.amount || '?'} P)`; }
-                    else if(item.status === 'rejected') { statusClass = 'st-rejected'; statusText = 'ถูกปฏิเสธ'; }
+                    let statusIcon = 'fa-hourglass-half';
+
+                    if(item.status === 'completed' || item.status === 'approved') { 
+                        statusClass = 'st-completed'; 
+                        statusText = `สำเร็จ (+${item.amount || '?'} P)`; 
+                        statusIcon = 'fa-circle-check';
+                    } else if(item.status === 'rejected') { 
+                        statusClass = 'st-rejected'; 
+                        statusText = 'ถูกปฏิเสธ'; 
+                        statusIcon = 'fa-circle-xmark';
+                    }
+
+                    // ตัดลิงก์ให้สั้นลงเพื่อแสดงผล
+                    const displayLink = item.link 
+                        ? (item.link.length > 45 ? item.link.substring(0, 45) + '...' : item.link)
+                        : 'ไม่มีลิงก์';
 
                     list.innerHTML += `
-                        <div class="req-item">
-                            <div style="color:#aaa;"><i class="fa-regular fa-clock"></i> ${date}</div>
-                            <div class="req-status ${statusClass}">${statusText}</div>
+                        <div class="req-item" style="flex-direction: column; align-items: flex-start; gap: 8px;">
+                            <div style="display: flex; justify-content: space-between; width: 100%; align-items: center;">
+                                <div style="color:#888; font-size: 11px;">
+                                    <i class="fa-regular fa-calendar"></i> ${date}
+                                </div>
+                                <div class="req-status ${statusClass}">
+                                    <i class="fa-solid ${statusIcon}"></i> ${statusText}
+                                </div>
+                            </div>
+                            <div style="color:#aaa; font-size: 11px; word-break: break-all; font-family: monospace; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 6px; width: 100%; border: 1px solid #2a2a35;">
+                                <i class="fa-solid fa-link" style="color: #555; margin-right: 4px;"></i>${displayLink}
+                            </div>
                         </div>
                     `;
                 });
@@ -470,15 +541,17 @@
             else el.className = `status-msg`;
         }
 
-        function showToast(message, type = 'info') {
+        function showToast(message, type = 'info', duration = 4000) {
             const container = document.getElementById('toast-container');
             const toast = document.createElement('div');
             toast.className = `toast ${type}`;
             let icon = 'fa-circle-info';
             let title = 'Notification';
-            if(type === 'success') { icon = 'fa-circle-check'; title = 'Success'; }
-            if(type === 'error') { icon = 'fa-circle-exclamation'; title = 'Error'; }
+            if(type === 'success') { icon = 'fa-circle-check';       title = 'Success'; }
+            if(type === 'error')   { icon = 'fa-circle-exclamation';  title = 'Error';   }
+            if(type === 'warning') { icon = 'fa-triangle-exclamation';title = 'Warning'; }
 
+            // รองรับ HTML ใน message (เช่น <strong>ชื่อ</strong>)
             toast.innerHTML = `
                 <i class="fa-solid ${icon} toast-icon"></i>
                 <div class="toast-content">
@@ -486,16 +559,14 @@
                     <div class="toast-msg">${message}</div>
                 </div>
                 <div class="toast-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></div>
-                <div class="toast-progress"></div>
+                <div class="toast-progress" style="animation-duration:${duration}ms"></div>
             `;
             container.appendChild(toast);
             setTimeout(() => {
                 toast.classList.add('hide');
                 toast.addEventListener('animationend', () => toast.remove());
-            }, 3000);
+            }, duration);
         }
     </script>
 </body>
 </html>
-
-

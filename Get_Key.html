@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Get Free Key — ZENU SHOP</title>
+
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/11.0.2/firebase-database-compat.js"></script>
+    <link rel="icon" href="Z.png" type="image/x-icon">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Kanit:wght@300;400;600;700&family=Poppins:wght@400;600;800&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+
+    <style>
+        :root {
+            --bg-body: #0f0f13;
+            --bg-card: #18181f;
+            --bg-header: rgba(15, 15, 19, 0.95);
+            --accent: #ff0000;
+            --accent-glow: rgba(255, 0, 0, 0.4);
+            --gold: #ffc107;
+            --text-main: #ffffff;
+            --text-muted: #a0a0a0;
+            --border: #2a2a35;
+            --radius: 16px;
+            --status-active: #00e676;
+        }
+
+        *, *::before, *::after { box-sizing: border-box; }
+
+        body {
+            margin: 0; padding: 0;
+            background-color: var(--bg-body);
+            color: var(--text-main);
+            font-family: 'Kanit', sans-serif;
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            overflow-x: hidden;
+        }
+
+        .bg-grid {
+            position: fixed; inset: 0;
+            background-image:
+                linear-gradient(rgba(255,255,255,0.03) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(255,255,255,0.03) 1px, transparent 1px);
+            background-size: 40px 40px;
+            z-index: -1;
+        }
+
+        /* ── HEADER ── */
+        #header {
+            width: 100%; height: 80px;
+            background: var(--bg-header); backdrop-filter: blur(10px);
+            border-bottom: 1px solid var(--border);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 30px; position: sticky; top: 0; z-index: 100;
+        }
+        .brand { display: flex; align-items: center; gap: 14px; font-family: 'Poppins'; cursor: pointer; text-decoration: none; }
+        .brand-icon {
+            width: 44px; height: 44px;
+            background: linear-gradient(135deg, #222, #000);
+            border: 1px solid #333; border-radius: 12px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent); font-weight: 900; font-size: 24px;
+            box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+        }
+        .brand-text { font-size: 22px; font-weight: 800; letter-spacing: -0.5px; color: #fff; }
+        .brand-text span { color: var(--accent); }
+
+        @media (max-width: 600px) {
+            #header { padding: 0 15px; height: 70px; }
+            .brand-text { font-size: 18px; }
+            .brand { gap: 8px; }
+            .brand-icon { width: 36px; height: 36px; font-size: 20px; }
+        }
+
+        /* ── HERO ── */
+        .hero { text-align: center; padding: 50px 20px 20px; }
+        .hero h1 { font-size: 32px; font-weight: 900; margin: 0 0 10px; color: #fff; text-transform: uppercase; letter-spacing: 1px; line-height: 1.2; }
+        .hero p { color: var(--text-muted); font-size: 14px; margin: 0; font-weight: 300; }
+        @media (min-width: 768px) {
+            .hero h1 { font-size: 42px; }
+            .hero p { font-size: 15px; }
+        }
+
+        /* ── MAIN CONTENT ── */
+        .container {
+            max-width: 600px; margin: 0 auto;
+            width: 100%; padding: 30px 24px 80px;
+            display: flex; flex-direction: column; align-items: center; gap: 28px;
+            flex: 1;
+        }
+
+        /* ── STEP CARD (waiting) ── */
+        .step-card {
+            width: 100%;
+            background: var(--bg-card);
+            border: 1px solid var(--border);
+            border-radius: var(--radius);
+            padding: 32px 28px;
+            text-align: center;
+            position: relative;
+            overflow: hidden;
+            transition: border-color 0.3s;
+        }
+        .step-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at top center, rgba(255,0,0,0.06) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .step-icon-wrap {
+            width: 72px; height: 72px;
+            background: linear-gradient(145deg, #1f1f28, #14141c);
+            border: 1px solid #333; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            margin: 0 auto 20px;
+            font-size: 30px; color: var(--accent);
+            box-shadow: 0 0 0 6px rgba(255,0,0,0.06), 0 8px 20px rgba(0,0,0,0.4);
+        }
+
+        .step-title {
+            font-family: 'Poppins'; font-size: 18px; font-weight: 800;
+            color: #fff; margin: 0 0 8px;
+            text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .step-desc {
+            font-size: 13px; color: var(--text-muted);
+            margin: 0 0 28px; line-height: 1.6;
+        }
+
+        /* ── COUNTDOWN RING ── */
+        .countdown-ring-wrap {
+            position: relative; width: 110px; height: 110px;
+            margin: 0 auto 10px;
+        }
+        .countdown-ring-wrap svg { transform: rotate(-90deg); }
+        .ring-bg { fill: none; stroke: #1f1f28; stroke-width: 8; }
+        .ring-progress {
+            fill: none; stroke: var(--accent); stroke-width: 8;
+            stroke-linecap: round;
+            stroke-dasharray: 283;
+            stroke-dashoffset: 0;
+            transition: stroke-dashoffset 1s linear, stroke 0.5s;
+            filter: drop-shadow(0 0 4px rgba(255,0,0,0.5));
+        }
+        .ring-number {
+            position: absolute; inset: 0;
+            display: flex; flex-direction: column;
+            align-items: center; justify-content: center;
+        }
+        .ring-sec {
+            font-family: 'Poppins'; font-size: 30px; font-weight: 800;
+            color: #fff; line-height: 1;
+        }
+        .ring-label { font-size: 10px; color: #666; font-weight: 600; letter-spacing: 0.5px; margin-top: 2px; }
+
+        .countdown-text {
+            font-size: 13px; color: #666;
+            font-weight: 400; margin-top: 14px;
+        }
+        .countdown-text strong { color: #aaa; }
+
+        /* ── KEY RESULT CARD ── */
+        .key-result-card {
+            width: 100%;
+            background: linear-gradient(145deg, #1d1d26, #14141a);
+            border: 1px solid rgba(0,230,118,0.25);
+            border-radius: var(--radius);
+            padding: 28px 24px;
+            display: none;
+            flex-direction: column;
+            gap: 0;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 8px 32px rgba(0,230,118,0.06), 0 0 0 1px rgba(0,230,118,0.08);
+        }
+        .key-result-card.visible { display: flex; }
+        .key-result-card::before {
+            content: '';
+            position: absolute; inset: 0;
+            background: radial-gradient(ellipse at top center, rgba(0,230,118,0.05) 0%, transparent 65%);
+            pointer-events: none;
+        }
+
+        .kr-header {
+            display: flex; align-items: center; gap: 12px; margin-bottom: 20px;
+        }
+        .kr-icon-wrap {
+            width: 48px; height: 48px; border-radius: 12px; flex-shrink: 0;
+            background: rgba(0,230,118,0.1); border: 1px solid rgba(0,230,118,0.2);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 20px; color: var(--status-active);
+        }
+        .kr-title-wrap { flex: 1; }
+        .kr-title {
+            font-family: 'Poppins'; font-size: 15px; font-weight: 800;
+            color: #fff; margin: 0 0 3px; text-transform: uppercase;
+        }
+        .kr-sub { font-size: 12px; color: #777; display: flex; align-items: center; gap: 5px; }
+        .badge-active {
+            padding: 3px 9px; border-radius: 6px; font-weight: 700; font-size: 10px;
+            text-transform: uppercase;
+            background: rgba(0,230,118,0.1); color: var(--status-active);
+            border: 1px solid rgba(0,230,118,0.2);
+            display: inline-flex; align-items: center; gap: 5px;
+        }
+        .badge-dot { width: 5px; height: 5px; border-radius: 50%; background: currentColor; }
+
+        /* Key display box */
+        .inv-key-box {
+            background: #09090c; border: 1px solid #222; border-radius: 10px;
+            padding: 14px 16px;
+            display: flex; justify-content: space-between; align-items: center;
+            gap: 12px; margin-bottom: 20px;
+        }
+        .inv-key-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 14px; color: #fff;
+            letter-spacing: 0.8px;
+            overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+            flex: 1;
+        }
+        .inv-action-btn {
+            background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.1);
+            color: #ddd; padding: 9px 14px; border-radius: 8px; cursor: pointer;
+            font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s ease; font-family: 'Kanit'; white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .inv-action-btn:hover { background: rgba(255,255,255,0.1); color: #fff; transform: translateY(-1px); }
+        .inv-action-btn.copied { background: rgba(0,230,118,0.15); border-color: rgba(0,230,118,0.3); color: var(--status-active); }
+
+        /* Expiry countdown */
+        .expiry-strip {
+            background: rgba(255,193,7,0.05);
+            border: 1px solid rgba(255,193,7,0.15);
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex; align-items: center; justify-content: space-between;
+            gap: 10px;
+        }
+        .expiry-left { display: flex; flex-direction: column; gap: 3px; }
+        .expiry-label {
+            font-size: 10px; color: #666;
+            font-weight: 700; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .expiry-timer {
+            font-family: 'Poppins'; font-size: 22px; font-weight: 800;
+            color: var(--gold); letter-spacing: 0.5px; line-height: 1;
+        }
+        .expiry-timer.urgent { color: #ff4444; }
+        .expiry-progress-wrap {
+            display: flex; flex-direction: column; align-items: flex-end; gap: 5px;
+        }
+        .expiry-pct { font-size: 11px; color: #666; font-weight: 600; }
+        .expiry-bar-bg {
+            width: 90px; height: 6px; border-radius: 3px;
+            background: rgba(255,255,255,0.06);
+            overflow: hidden;
+        }
+        .expiry-bar-fill {
+            height: 100%; border-radius: 3px;
+            background: var(--gold);
+            transition: width 1s linear, background 0.5s;
+        }
+
+        /* Divider with meta info */
+        .kr-meta {
+            display: flex; gap: 10px; margin-top: 16px;
+            flex-wrap: wrap;
+        }
+        .kr-meta-item {
+            flex: 1; min-width: 120px;
+            background: rgba(255,255,255,0.03); border: 1px solid var(--border);
+            border-radius: 8px; padding: 10px 12px;
+            display: flex; flex-direction: column; gap: 3px;
+        }
+        .kr-meta-lbl { font-size: 10px; color: #555; font-weight: 700; text-transform: uppercase; letter-spacing: 0.4px; }
+        .kr-meta-val { font-size: 12px; color: #ccc; font-weight: 600; font-family: 'Poppins'; }
+
+        /* ── INFO STRIP (bottom of page) ── */
+        .info-strip {
+            width: 100%;
+            background: rgba(255,193,7,0.04); border: 1px solid rgba(255,193,7,0.1);
+            border-radius: 12px; padding: 14px 18px;
+            display: flex; align-items: flex-start; gap: 12px;
+        }
+        .info-strip i { color: var(--gold); font-size: 16px; margin-top: 2px; flex-shrink: 0; }
+        .info-strip p { margin: 0; font-size: 12px; color: #888; line-height: 1.6; }
+        .info-strip strong { color: #bbb; }
+
+        /* ── TOAST ── */
+        #toast-container {
+            position: fixed; top: 20px; right: 20px; z-index: 10000;
+            display: flex; flex-direction: column; gap: 10px;
+            pointer-events: none;
+        }
+        .toast {
+            background: #18181f; color: #fff; min-width: 260px; max-width: 300px;
+            padding: 14px; border-radius: 12px; border: 1px solid #333;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            display: flex; align-items: flex-start; gap: 10px;
+            transform: translateX(100%); opacity: 0;
+            animation: toastIn 0.3s forwards ease-out;
+            pointer-events: auto; position: relative; overflow: hidden;
+        }
+        .toast.hide { animation: toastOut 0.3s forwards ease-in; }
+        @keyframes toastIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes toastOut { from { transform: translateX(0); opacity: 1; } to { transform: translateX(100%); opacity: 0; } }
+        .toast-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+        .toast.success .toast-icon { color: #00e676; }
+        .toast.error   .toast-icon { color: #ff4444; }
+        .toast.info    .toast-icon { color: #2196f3; }
+        .toast-content { flex: 1; display: flex; flex-direction: column; gap: 3px; }
+        .toast-title { font-weight: 700; font-size: 13px; }
+        .toast-msg { font-size: 11px; color: #aaa; }
+        .toast-close { position: absolute; top: 8px; right: 8px; color: #555; cursor: pointer; font-size: 12px; }
+        .toast-progress { position: absolute; bottom: 0; left: 0; height: 3px; width: 100%; animation: tProg 3s linear forwards; }
+        .toast.success .toast-progress { background: #00e676; }
+        .toast.error   .toast-progress { background: #ff4444; }
+        .toast.info    .toast-progress { background: #2196f3; }
+        @keyframes tProg { from { width: 100%; } to { width: 0%; } }
+
+        /* ── KEY GENERATE ANIMATION ── */
+        @keyframes fadeUp {
+            from { opacity: 0; transform: translateY(20px); }
+            to   { opacity: 1; transform: translateY(0); }
+        }
+        .anim-in { animation: fadeUp 0.4s ease forwards; }
+
+        @keyframes pulseRed {
+            0%,100% { box-shadow: 0 0 0 6px rgba(255,0,0,0.06); }
+            50%      { box-shadow: 0 0 0 10px rgba(255,0,0,0.12); }
+        }
+        .pulse { animation: pulseRed 1.5s ease-in-out infinite; }
+
+    </style>
+</head>
+<body>
+    <div class="bg-grid"></div>
+    <div id="toast-container"></div>
+
+    <!-- HEADER -->
+    <div id="header">
+        <a class="brand" href="index.html">
+            <div class="brand-icon">Z</div>
+            <div class="brand-text">ZENU <span>SHOP</span></div>
+        </a>
+    </div>
+
+    <!-- HERO -->
+    <div class="hero">
+        <h1>รับ Key ฟรี 24 ชั่วโมง</h1>
+        <p>ดูหน้าเว็บให้ครบ 10 วินาที ระบบจะเจน Key ให้คุณโดยอัตโนมัติ</p>
+    </div>
+
+    <!-- MAIN -->
+    <div class="container">
+
+        <!-- WAITING / COUNTDOWN CARD -->
+        <div class="step-card" id="waiting-card">
+            <div class="step-icon-wrap pulse" id="step-icon">
+                <i class="fa-solid fa-key"></i>
+            </div>
+
+            <div class="step-title" id="step-title">กำลังเตรียม Key ให้คุณ…</div>
+            <div class="step-desc" id="step-desc">กรุณารอสักครู่ ระบบกำลังตรวจสอบ<br>ห้ามปิดหรือรีโหลดหน้าเว็บในระหว่างนี้</div>
+
+            <div class="countdown-ring-wrap" id="ring-wrap">
+                <svg width="110" height="110" viewBox="0 0 110 110">
+                    <circle class="ring-bg"       cx="55" cy="55" r="45"/>
+                    <circle class="ring-progress" cx="55" cy="55" r="45" id="ring-path"/>
+                </svg>
+                <div class="ring-number">
+                    <span class="ring-sec" id="ring-sec">10</span>
+                    <span class="ring-label">SECONDS</span>
+                </div>
+            </div>
+
+            <p class="countdown-text">อีก <strong id="cd-text">10</strong> วินาที key ของคุณจะพร้อมใช้งาน</p>
+        </div>
+
+        <!-- KEY RESULT CARD -->
+        <div class="key-result-card" id="key-card">
+            <div class="kr-header">
+                <div class="kr-icon-wrap">
+                    <i class="fa-solid fa-key"></i>
+                </div>
+                <div class="kr-title-wrap">
+                    <div class="kr-title">ZENU HUB Key</div>
+                    <div class="kr-sub">
+                        <span class="badge-active">
+                            <span class="badge-dot"></span> ACTIVE
+                        </span>
+                        &nbsp;· 24 HOURS
+                    </div>
+                </div>
+            </div>
+
+            <!-- Key box -->
+            <div class="inv-key-box">
+                <span class="inv-key-text" id="key-display">—</span>
+                <button class="inv-action-btn" id="copy-btn" onclick="copyKey()">
+                    <i class="fa-regular fa-copy"></i> COPY
+                </button>
+            </div>
+
+            <!-- Expiry countdown -->
+            <div class="expiry-strip">
+                <div class="expiry-left">
+                    <span class="expiry-label"><i class="fa-regular fa-clock"></i>&nbsp; เวลาที่เหลือ</span>
+                    <span class="expiry-timer" id="expiry-timer">24h 00m00s</span>
+                </div>
+                <div class="expiry-progress-wrap">
+                    <span class="expiry-pct" id="expiry-pct">100%</span>
+                    <div class="expiry-bar-bg">
+                        <div class="expiry-bar-fill" id="expiry-bar" style="width:100%;"></div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Meta info -->
+            <div class="kr-meta">
+                <div class="kr-meta-item">
+                    <span class="kr-meta-lbl"><i class="fa-regular fa-calendar-plus"></i> สร้างเมื่อ</span>
+                    <span class="kr-meta-val" id="meta-created">—</span>
+                </div>
+                <div class="kr-meta-item">
+                    <span class="kr-meta-lbl"><i class="fa-regular fa-calendar-xmark"></i> หมดอายุ</span>
+                    <span class="kr-meta-val" id="meta-expires">—</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- INFO STRIP -->
+        <div class="info-strip">
+            <i class="fa-solid fa-circle-info"></i>
+            <p>
+                <strong>หมายเหตุ:</strong> ระบบจะเก็บ Key ของคุณไว้ในเบราว์เซอร์นี้ หากต้องการ Key ใหม่ ต้องรอให้ Key เดิมหมดอายุก่อน (24 ชั่วโมง) · Key ที่ได้จะเป็น <strong>ZENU HUB</strong> เวอร์ชั่นทดลอง 24 ชม.
+            </p>
+        </div>
+
+    </div><!-- /container -->
+
+    <script src="API.js"></script>
+    <script>
+    /* ──────────────────────────────────────────
+       Firebase init
+    ────────────────────────────────────────── */
+    const firebaseConfig = window.getSecureConfig();
+    if (!firebase.apps.length) firebase.initializeApp(firebaseConfig);
+    const rtdb    = firebase.database();
+    const keysRef = rtdb.ref('Keys');
+
+    /* ──────────────────────────────────────────
+       Constants
+    ────────────────────────────────────────── */
+    const CACHE_KEY      = 'zenu_free_key_v1';
+    const DURATION_LABEL = '24 HOURS';
+    const KEY_PREFIX     = 'ZENU-HUB-FREE-';
+    const KEY_LENGTH     = 20;
+    const DURATION_MS    = 24 * 60 * 60 * 1000; // 24 h
+
+    /* ──────────────────────────────────────────
+       Key Generator (ตรงกับ Key_Manager)
+    ────────────────────────────────────────── */
+    function parseDurationToMs(label) {
+        if (!label || label.includes('PERM') || label.includes('LIFE')) return null;
+        const parts = label.split(' ');
+        if (parts.length < 2) return null;
+        const amount = parseInt(parts[0]);
+        const unit   = parts[1].toUpperCase();
+        let multiplier = 0;
+        if      (unit.startsWith('MIN'))   multiplier = 60 * 1000;
+        else if (unit.startsWith('HOUR'))  multiplier = 60 * 60 * 1000;
+        else if (unit.startsWith('DAY'))   multiplier = 24 * 60 * 60 * 1000;
+        else if (unit.startsWith('WEEK'))  multiplier = 7 * 24 * 60 * 60 * 1000;
+        else if (unit.startsWith('MONTH')) multiplier = 30 * 24 * 60 * 60 * 1000;
+        return amount * multiplier;
+    }
+
+    function generateUniqueKey(prefix, length, existingKeys) {
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let attempts = 0;
+        while (attempts < 100) {
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            const newKey = prefix + result;
+            if (!existingKeys.has(newKey)) {
+                existingKeys.add(newKey);
+                return newKey;
+            }
+            attempts++;
+        }
+        return null;
+    }
+
+    function fmtDateTime(ts) {
+        const d = new Date(ts);
+        return d.toLocaleDateString('th-TH', { day:'2-digit', month:'short', year:'numeric' })
+             + ' ' + d.toLocaleTimeString('th-TH', { hour:'2-digit', minute:'2-digit' });
+    }
+
+    function fmtCountdown(ms) {
+        if (ms <= 0) return '00h 00m00s';
+        const h = Math.floor(ms / 3600000);
+        const m = Math.floor((ms % 3600000) / 60000);
+        const s = Math.floor((ms % 60000) / 1000);
+        return `${String(h).padStart(2,'0')}h ${String(m).padStart(2,'0')}m${String(s).padStart(2,'0')}s`;
+    }
+
+    function showToast(msg, type = 'info') {
+        const c = document.getElementById('toast-container');
+        const t = document.createElement('div');
+        t.className = `toast ${type}`;
+        const icons = { success:'fa-circle-check', error:'fa-circle-exclamation', info:'fa-circle-info' };
+        const titles = { success:'สำเร็จ', error:'ผิดพลาด', info:'แจ้งเตือน' };
+        t.innerHTML = `
+            <i class="fa-solid ${icons[type]||icons.info} toast-icon"></i>
+            <div class="toast-content">
+                <div class="toast-title">${titles[type]||'แจ้งเตือน'}</div>
+                <div class="toast-msg">${msg}</div>
+            </div>
+            <div class="toast-close" onclick="this.parentElement.remove()"><i class="fa-solid fa-xmark"></i></div>
+            <div class="toast-progress"></div>`;
+        c.appendChild(t);
+        setTimeout(() => {
+            t.classList.add('hide');
+            t.addEventListener('animationend', () => t.remove());
+        }, 3000);
+    }
+
+    /* ──────────────────────────────────────────
+       Real-time DB Watcher — ตรวจสอบ key ใน Firebase ตลอดเวลา
+       ถ้า key ถูกลบออกจาก DB → ล้าง cache → reset UI → เริ่มนับถอยหลังใหม่
+    ────────────────────────────────────────── */
+    let dbWatcherKeyId = null;
+
+    function stopDbWatcher() {
+        if (dbWatcherKeyId) {
+            keysRef.child(dbWatcherKeyId).off('value');
+            dbWatcherKeyId = null;
+        }
+    }
+
+    function watchKeyInDatabase(keyId) {
+        stopDbWatcher();
+        dbWatcherKeyId = keyId;
+        keysRef.child(keyId).on('value', (snap) => {
+            // snap.exists() === false หมายความว่า key ถูกลบออกจาก DB แล้ว
+            if (!snap.exists()) {
+                localStorage.removeItem(CACHE_KEY);
+                stopDbWatcher();
+                clearInterval(expiryInterval);
+                showToast('Key ถูกลบออกจากระบบแล้ว กำลังเตรียม Key ใหม่…', 'info');
+                resetAndGetNewKey();
+            }
+        });
+    }
+
+    function resetAndGetNewKey() {
+        // ซ่อน key result card
+        const card = document.getElementById('key-card');
+        card.classList.remove('visible', 'anim-in');
+
+        // แสดง waiting card
+        const waitingCard = document.getElementById('waiting-card');
+        waitingCard.style.display = '';
+
+        // Reset ข้อความ
+        document.getElementById('step-title').textContent = 'กำลังเตรียม Key ให้คุณ…';
+        document.getElementById('step-desc').innerHTML   = 'กรุณารอสักครู่ ระบบกำลังตรวจสอบ<br>ห้ามปิดหรือรีโหลดหน้าเว็บในระหว่างนี้';
+
+        // Reset ring animation
+        const ring  = document.getElementById('ring-path');
+        const secEl = document.getElementById('ring-sec');
+        const circumf = 2 * Math.PI * 45;
+        ring.style.stroke          = 'var(--accent)';
+        ring.style.filter          = 'drop-shadow(0 0 4px rgba(255,0,0,0.5))';
+        ring.style.strokeDasharray  = circumf;
+        ring.style.strokeDashoffset = 0;
+        secEl.textContent = '10';
+        document.getElementById('cd-text').textContent = '10';
+
+        // Reset icon
+        const iconEl = document.getElementById('step-icon');
+        iconEl.style.color        = 'var(--accent)';
+        iconEl.style.borderColor  = '';
+        iconEl.classList.add('pulse');
+
+        // เริ่มนับถอยหลังใหม่
+        startRingCountdown(generateAndSaveKey);
+    }
+
+    /* ──────────────────────────────────────────
+       Expiry countdown tick
+    ────────────────────────────────────────── */
+    let expiryInterval = null;
+
+    function startExpiryCountdown(expiresAt) {
+        const timerEl  = document.getElementById('expiry-timer');
+        const barEl    = document.getElementById('expiry-bar');
+        const pctEl    = document.getElementById('expiry-pct');
+
+        function tick() {
+            const remaining = expiresAt - Date.now();
+            if (remaining <= 0) {
+                timerEl.textContent = 'หมดอายุแล้ว';
+                timerEl.classList.add('urgent');
+                barEl.style.width = '0%';
+                pctEl.textContent = '0%';
+                clearInterval(expiryInterval);
+                localStorage.removeItem(CACHE_KEY);
+                showToast('Key ของคุณหมดอายุแล้ว กรุณาโหลดหน้าใหม่เพื่อรับ Key ใหม่', 'info');
+                return;
+            }
+            const pct = Math.max(0, (remaining / DURATION_MS) * 100);
+            timerEl.textContent = fmtCountdown(remaining);
+            barEl.style.width = pct.toFixed(1) + '%';
+            pctEl.textContent = pct.toFixed(0) + '%';
+            // color shift when < 10%
+            if (pct < 10) {
+                timerEl.classList.add('urgent');
+                barEl.style.background = '#ff4444';
+            } else if (pct < 30) {
+                barEl.style.background = '#ff9800';
+            } else {
+                barEl.style.background = 'var(--gold)';
+            }
+        }
+        tick();
+        expiryInterval = setInterval(tick, 1000);
+    }
+
+    /* ──────────────────────────────────────────
+       Show key result UI
+    ────────────────────────────────────────── */
+    function showKeyResult(keyId, createdAt, expiresAt) {
+        document.getElementById('waiting-card').style.display = 'none';
+        const card = document.getElementById('key-card');
+        card.classList.add('visible', 'anim-in');
+
+        document.getElementById('key-display').textContent = keyId;
+        document.getElementById('meta-created').textContent = fmtDateTime(createdAt);
+        document.getElementById('meta-expires').textContent = fmtDateTime(expiresAt);
+
+        startExpiryCountdown(expiresAt);
+
+        // เริ่ม real-time listener — ตรวจสอบ key ใน Firebase ตลอดเวลา
+        watchKeyInDatabase(keyId);
+    }
+
+    /* ──────────────────────────────────────────
+       Copy key
+    ────────────────────────────────────────── */
+    function copyKey() {
+        const key = document.getElementById('key-display').textContent;
+        navigator.clipboard.writeText(key).then(() => {
+            const btn = document.getElementById('copy-btn');
+            btn.innerHTML = '<i class="fa-solid fa-check"></i> COPIED!';
+            btn.classList.add('copied');
+            showToast('คัดลอก Key แล้ว!', 'success');
+            setTimeout(() => {
+                btn.innerHTML = '<i class="fa-regular fa-copy"></i> COPY';
+                btn.classList.remove('copied');
+            }, 2000);
+        }).catch(() => {
+            showToast('ไม่สามารถคัดลอกได้', 'error');
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       Save key to Firebase RTDB (โครงสร้างเดียวกับ Key_Manager)
+    ────────────────────────────────────────── */
+    async function saveKeyToFirebase(keyId, expiresAt) {
+        await keysRef.child(keyId).set({
+            key            : keyId,       // ← validate rule ต้องการ field นี้
+            active         : true,
+            is_sold        : false,
+            expires_at     : expiresAt,
+            activated      : true,
+            duration_label : DURATION_LABEL,
+            created_at     : firebase.database.ServerValue.TIMESTAMP
+        });
+    }
+
+    /* ──────────────────────────────────────────
+       Ring countdown animation (10 sec)
+       นับเฉพาะตอนที่ผู้ใช้กำลังดูแท็บอยู่ (Page Visibility API)
+    ────────────────────────────────────────── */
+    function startRingCountdown(onDone) {
+        const TOTAL   = 10;
+        const circumf = 2 * Math.PI * 45;
+        const ring    = document.getElementById('ring-path');
+        const secEl   = document.getElementById('ring-sec');
+        const cdText  = document.getElementById('cd-text');
+        let remaining = TOTAL;
+        let iv        = null;
+
+        ring.style.strokeDasharray  = circumf;
+        ring.style.strokeDashoffset = 0;
+
+        function tick() {
+            remaining--;
+            secEl.textContent  = remaining;
+            cdText.textContent = remaining;
+            const offset = circumf * (1 - remaining / TOTAL);
+            ring.style.strokeDashoffset = offset;
+
+            if (remaining <= 3) ring.style.stroke = '#ff9800';
+            if (remaining <= 0) {
+                stopTicking();
+                document.removeEventListener('visibilitychange', onVisibility);
+                ring.style.stroke = 'var(--status-active)';
+                ring.style.filter = 'drop-shadow(0 0 6px rgba(0,230,118,0.6))';
+                secEl.textContent = '✓';
+                document.getElementById('step-title').textContent = 'กำลังสร้าง Key…';
+                document.getElementById('step-desc').textContent  = 'บันทึกข้อมูลลงฐานข้อมูล กรุณารอสักครู่';
+                const iconEl = document.getElementById('step-icon');
+                iconEl.style.color       = 'var(--status-active)';
+                iconEl.style.borderColor = 'rgba(0,230,118,0.2)';
+                iconEl.classList.remove('pulse');
+                onDone();
+            }
+        }
+
+        function startTicking() { if (!iv) iv = setInterval(tick, 1000); }
+        function stopTicking()  { if (iv) { clearInterval(iv); iv = null; } }
+
+        function onVisibility() {
+            if (document.hidden) {
+                stopTicking();
+            } else {
+                startTicking();
+            }
+        }
+
+        document.addEventListener('visibilitychange', onVisibility);
+        if (!document.hidden) startTicking();
+    }
+
+    /* ──────────────────────────────────────────
+       Main logic — ดึง existing keys ก่อนเหมือน Key_Manager
+    ────────────────────────────────────────── */
+    async function generateAndSaveKey() {
+        try {
+            // 1. ดึง keys ที่มีอยู่แล้วทั้งหมดจาก DB (เหมือน Key_Manager)
+            const snap        = await keysRef.once('value');
+            const existing    = snap.val() || {};
+            const existingSet = new Set(Object.keys(existing));
+
+            // 2. สร้าง key ที่ไม่ซ้ำ
+            const keyId = generateUniqueKey(KEY_PREFIX, KEY_LENGTH, existingSet);
+            if (!keyId) {
+                throw new Error('ไม่สามารถสร้าง Key ที่ไม่ซ้ำได้ กรุณาลองใหม่');
+            }
+
+            // 3. คำนวณเวลาหมดอายุ
+            const createdAt = Date.now();
+            const ms        = parseDurationToMs(DURATION_LABEL);
+            const expiresAt = createdAt + (ms || DURATION_MS);
+
+            // 4. บันทึกลง Firebase (โครงสร้างเดียวกับ Key_Manager)
+            await saveKeyToFirebase(keyId, expiresAt);
+
+            // 5. Cache ใน localStorage ป้องกัน get ซ้ำ
+            localStorage.setItem(CACHE_KEY, JSON.stringify({ keyId, createdAt, expiresAt }));
+
+            showKeyResult(keyId, createdAt, expiresAt);
+            showToast('ได้รับ Key แล้ว! ใช้งานได้ 24 ชั่วโมง', 'success');
+        } catch (err) {
+            console.error(err);
+            showToast('เกิดข้อผิดพลาด: ' + err.message, 'error');
+            document.getElementById('step-title').textContent = 'เกิดข้อผิดพลาด';
+            document.getElementById('step-desc').textContent  = err.message;
+        }
+    }
+
+    /* ──────────────────────────────────────────
+       On load: check cache first
+    ────────────────────────────────────────── */
+    window.addEventListener('DOMContentLoaded', () => {
+        const cached = localStorage.getItem(CACHE_KEY);
+        if (cached) {
+            try {
+                const { keyId, createdAt, expiresAt } = JSON.parse(cached);
+                if (expiresAt > Date.now()) {
+                    // Valid key exists → show it directly
+                    showKeyResult(keyId, createdAt, expiresAt);
+                    showToast('พบ Key ที่ยังใช้งานได้อยู่', 'info');
+                    return;
+                } else {
+                    localStorage.removeItem(CACHE_KEY);
+                }
+            } catch { localStorage.removeItem(CACHE_KEY); }
+        }
+
+        // No valid key → start 10-sec countdown then generate
+        startRingCountdown(generateAndSaveKey);
+    });
+    </script>
+</body>
+</html>

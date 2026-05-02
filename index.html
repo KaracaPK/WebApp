@@ -153,6 +153,11 @@
             box-sizing: border-box;
         }
         .search-box input:focus { border-color: var(--accent); box-shadow: 0 0 0 2px rgba(255,0,0,0.1); }
+        /* Hide autofill highlighting */
+        .search-box input:-webkit-autofill { 
+            -webkit-box-shadow: inset 0 0 0 999px #0a0a0c !important;
+            -webkit-text-fill-color: #fff !important;
+        }
         .search-box i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: #666; font-size: 14px; }
 
         /* PRODUCT GRID */
@@ -218,13 +223,14 @@
             width: 100%; max-width: 420px; 
             position: relative; box-shadow: 0 20px 60px rgba(0,0,0,0.5); 
             box-sizing: border-box; 
-            max-height: 85vh; 
+            max-height: 90vh; 
             display: flex; flex-direction: column; 
+            overflow-y: auto;
             transform: translateY(20px); transition: 0.3s; 
         }
         .modal-overlay.active .modal-box { transform: translateY(0); }
         
-        .btn-full { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; margin-top: 12px; background: var(--accent); color: white; font-size: 14px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; }
+        .btn-full { width: 100%; padding: 14px; border-radius: 10px; border: none; font-weight: 700; cursor: pointer; margin-top: 12px; background: var(--accent); color: white; font-size: 14px; transition: 0.2s; display: flex; align-items: center; justify-content: center; gap: 10px; box-sizing: border-box; }
         .btn-full:hover { transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,0,0,0.3); }
         .btn-cancel { background: rgba(255,255,255,0.05); color: #888; margin-top: 8px; border: 1px solid transparent; flex-shrink: 0; }
         .btn-cancel:hover { background: rgba(255,255,255,0.1); color: #fff; }
@@ -294,15 +300,72 @@
         .inv-search-container input:focus { border-color: var(--accent); background: rgba(255,255,255,0.08); }
         .inv-search-container i { position: absolute; left: 12px; top: 50%; transform: translateY(-50%); color: #666; font-size: 12px; }
 
-        .profile-header { text-align: center; margin-bottom: 25px; padding-bottom: 20px; border-bottom: 1px solid #2a2a2a; }
-        .profile-avatar { width: 70px; height: 70px; background: #1a1a1a; border-radius: 50%; margin: 0 auto 12px; display: flex; align-items: center; justify-content: center; font-size: 28px; color: #666; border: 2px solid #333; position: relative; }
-        .profile-name-box { display: flex; align-items: center; justify-content: center; gap: 8px; margin-bottom: 6px; }
-        .profile-name { font-size: 22px; font-weight: 800; color: #fff; }
-        .edit-profile-icon { color: #666; font-size: 16px; cursor: pointer; transition: 0.2s; }
-        .edit-profile-icon:hover { color: var(--accent); }
-        .profile-role { font-size: 12px; font-weight: 700; color: var(--accent); text-transform: uppercase; letter-spacing: 1.5px; background: rgba(255,0,0,0.08); padding: 4px 10px; border-radius: 6px; display: inline-block; border: 1px solid rgba(255,0,0,0.2); }
-
-        /* Input Modal Style & Password Toggle */
+        .profile-header {
+            display: flex; flex-direction: column; align-items: center; gap: 10px;
+            margin-bottom: 0; padding-bottom: 0; border-bottom: none;
+            width: 100%; text-align: center;
+        }
+        .profile-avatar { 
+            width: 80px; height: 80px; background: linear-gradient(145deg, #1f1f25, #14141a); 
+            border-radius: 50%; margin: 0; display: flex; align-items: center; justify-content: center; 
+            font-size: 32px; color: #666; border: 3px solid #333; position: relative;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+        }
+        .profile-avatar.admin { border-color: var(--gold); box-shadow: 0 4px 20px rgba(255, 193, 7, 0.3); }
+        .admin-crown {
+            position: absolute; top: -8px; font-size: 24px; color: var(--gold);
+            filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
+            animation: crownFloat 2s ease-in-out infinite;
+        }
+        @keyframes crownFloat {
+            0%, 100% { transform: translateY(0px); }
+            50% { transform: translateY(-2px); }
+        }
+        .profile-name-box { display: flex; align-items: center; justify-content: center; gap: 8px; width: 100%; }
+        .profile-name { font-size: 20px; font-weight: 800; color: #fff; line-height: 1.2; }
+        .edit-profile-icon { color: #666; font-size: 15px; cursor: pointer; transition: 0.15s; }
+        .edit-profile-icon:hover { color: var(--accent); transform: scale(1.06); }
+        .profile-role { margin-top: 6px; }
+        .profile-role { 
+            font-size: 11px; font-weight: 700; text-transform: uppercase; letter-spacing: 1.5px; 
+            padding: 5px 12px; border-radius: 6px; display: inline-block; margin-bottom: 5px;
+        }
+        .profile-role.admin { 
+            color: var(--gold);
+            background: linear-gradient(135deg, rgba(180, 200, 0, 0.08), rgba(0, 150, 60, 0.04));
+            border: 1px solid rgba(180, 200, 0, 0.25);
+            padding: 6px 12px; 
+            border-radius: 12px; 
+            box-shadow: 0 6px 20px rgba(180, 150, 0, 0.06);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
+        .profile-role.members { 
+            color: #00c853; 
+            background: linear-gradient(135deg, rgba(0, 200, 83, 0.08), rgba(0, 150, 60, 0.04));
+            border: 1px solid rgba(0, 200, 83, 0.25);
+            padding: 6px 12px; 
+            border-radius: 12px; 
+            box-shadow: 0 6px 20px rgba(0, 150, 60, 0.06);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
+        .profile-role.vip {
+            color: #6a1b9a;
+            background: linear-gradient(135deg, rgba(138,43,226,0.06), rgba(106,27,154,0.03));
+            border: 1px solid rgba(138,43,226,0.18);
+            padding: 6px 12px;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(106,27,154,0.05);
+            font-size: 12px;
+            font-weight: 800;
+            letter-spacing: 1px;
+            display: inline-block;
+        }
         .input-group-modal { margin-bottom: 15px; text-align: left; }
         .input-group-modal label { display: block; font-size: 11px; color: #888; margin-bottom: 6px; font-weight: 600; text-transform: uppercase; }
         
@@ -378,6 +441,216 @@
         .btn-confirm-no { background: rgba(255,255,255,0.05); color: #ccc; flex: 1; padding: 12px; border: 1px solid transparent; border-radius: 8px; font-weight: 600; cursor: pointer; }
         .btn-confirm-no:hover { background: rgba(255,255,255,0.1); color: white; }
 
+        /* === PROFILE MODAL REDESIGN === */
+
+        .profile-header {
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            margin-bottom: 0; padding-bottom: 0; border-bottom: none;
+            width: 100%; text-align: center;
+        }
+        .profile-hero-card {
+            background: linear-gradient(145deg, rgba(255,255,255,0.04), rgba(255,255,255,0.015));
+            border: 1px solid rgba(255,255,255,0.07);
+            border-radius: 16px; padding: 20px 16px 16px;
+            display: flex; flex-direction: column; align-items: center; gap: 8px;
+            flex-shrink: 0; width: 100%; box-sizing: border-box; text-align: center;
+        }
+        .profile-stats-row {
+            display: flex; gap: 8px; margin-top: 6px;
+            width: 100%; justify-content: center; flex-wrap: wrap;
+        }
+        .profile-stat-chip {
+            display: flex; align-items: center; gap: 6px;
+            background: rgba(255,255,255,0.04); border: 1px solid rgba(255,255,255,0.08);
+            border-radius: 8px; padding: 6px 10px; font-size: 11px; color: #aaa; white-space: nowrap;
+        }
+        .profile-stat-chip i { font-size: 10px; color: var(--gold); }
+        .profile-stat-chip span { color: #fff; font-weight: 700; }
+        .profile-section-label {
+            font-size: 9px; font-weight: 800; letter-spacing: 1.5px;
+            color: #555; text-transform: uppercase; margin: 0 2px;
+        }
+        .profile-modal-inner { display: flex; flex-direction: column; gap: 14px; }
+        .profile-actions { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .profile-btn-group { display: flex; flex-direction: column; gap: 8px; }
+        .profile-btn-group .btn-full { margin-top: 0; padding: 12px 10px; font-size: 12.5px; border-radius: 12px; }
+        .profile-btn-group.main-actions { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .profile-btn-group.main-actions .btn-full { padding: 12px 8px; font-size: 12px; }
+        .profile-btn-group.admin-group { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+        .profile-btn-group.admin-group .btn-full { padding: 11px 8px; font-size: 12px; }
+        .profile-btn-group.danger-zone {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 8px;
+            border-top: 1px solid rgba(255,255,255,0.06); padding-top: 10px;
+        }
+        .profile-btn-group.danger-zone .btn-full { padding: 10px 8px; font-size: 12px; }
+
+        @media (orientation: portrait) {
+            .modal-box.profile-layout { max-width: 420px; }
+            .profile-modal-inner { flex-direction: column; }
+            .profile-hero-card { align-items: center; text-align: center; }
+            .profile-header { align-items: center; text-align: center; }
+            .profile-name-box { justify-content: center; width: 100%; }
+        }
+        @media (orientation: landscape) {
+            .modal-box.profile-layout { max-width: 820px; max-height: 88vh; overflow-y: auto; }
+            .profile-modal-inner { flex-direction: row; align-items: stretch; gap: 18px; }
+            .profile-hero-card {
+                min-width: 160px; max-width: 180px; flex-shrink: 0;
+                align-items: center; padding: 18px 14px; width: auto;
+                text-align: center;
+            }
+            /* Keep avatar, name, role all centered inside the hero card column */
+            .profile-header { align-items: center; text-align: center; }
+            .profile-avatar { width: 68px; height: 68px; font-size: 26px; }
+            .profile-name-box { flex-direction: row; align-items: center; justify-content: center; gap: 6px; width: 100%; }
+            .profile-name { font-size: 15px; }
+            .profile-role { margin-top: 0; }
+            .profile-stats-row { flex-direction: column; gap: 6px; justify-content: center; align-items: center; }
+            .profile-stat-chip { width: 100%; box-sizing: border-box; justify-content: center; }
+            .profile-actions { flex: 1; gap: 8px; justify-content: flex-start; }
+            .profile-btn-group .btn-full { font-size: 11.5px; padding: 11px 8px; }
+        }
+
+        /* ── FOOTER ── */
+        .site-footer {
+            width: 100%;
+            background: rgba(15, 15, 19, 0.97);
+            border-top: 1px solid var(--border);
+            padding: 40px 24px 32px;
+            box-sizing: border-box;
+            margin-top: auto;
+        }
+        .footer-inner {
+            max-width: 700px;
+            margin: 0 auto;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+        .footer-heading {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .footer-heading-icon {
+            width: 34px; height: 34px;
+            background: rgba(255,0,0,0.08);
+            border: 1px solid rgba(255,0,0,0.2);
+            border-radius: 9px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent); font-size: 14px; flex-shrink: 0;
+        }
+        .footer-heading-text {
+            font-family: 'Poppins';
+            font-size: 13px; font-weight: 800;
+            color: #fff; text-transform: uppercase; letter-spacing: 0.5px;
+        }
+        .footer-heading-sub {
+            font-size: 11px; color: #555; font-weight: 400; margin-top: 2px;
+        }
+        /* Script copy box — same as Get_Key inv-key-box */
+        .footer-script-box {
+            background: #09090c;
+            border: 1px solid #222;
+            border-radius: 10px;
+            padding: 14px 16px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 12px;
+        }
+        .footer-script-text {
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 13px;
+            letter-spacing: 0.5px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            flex: 1;
+            line-height: 1.5;
+        }
+        .footer-copy-btn {
+            background: rgba(255,255,255,0.05);
+            border: 1px solid rgba(255,255,255,0.1);
+            color: #ddd;
+            padding: 9px 14px;
+            border-radius: 8px;
+            cursor: pointer;
+            font-size: 12px; font-weight: 600;
+            display: flex; align-items: center; gap: 6px;
+            transition: all 0.2s ease;
+            font-family: 'Kanit';
+            white-space: nowrap;
+            flex-shrink: 0;
+        }
+        .footer-copy-btn:hover {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            transform: translateY(-1px);
+        }
+        .footer-copy-btn.copied {
+            background: rgba(0,230,118,0.15);
+            border-color: rgba(0,230,118,0.3);
+            color: var(--status-active);
+        }
+        .footer-divider {
+            border: none;
+            border-top: 1px solid rgba(255,255,255,0.04);
+            margin: 0;
+        }
+        .footer-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            flex-wrap: wrap;
+            gap: 8px;
+        }
+        .footer-brand { display: flex; align-items: center; gap: 8px; text-decoration: none; }
+        .footer-brand-icon {
+            width: 32px; height: 32px;
+            background: linear-gradient(135deg, #161616);
+            border: 1px solid #333; border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            color: var(--accent); font-weight: 900; font-size: 20px;
+        }
+        .footer-brand-name {
+            font-family: 'Poppins'; font-size: 17px; font-weight: 800; color: #fff;
+        }
+        .footer-brand-name span { color: var(--accent); }
+        .footer-copy-notice {
+            font-size: 11px; color: #444; font-weight: 400;
+        }
+        @media (max-width: 600px) {
+            .footer-script-text { font-size: 11px; }
+            .footer-copy-btn { padding: 8px 10px; font-size: 11px; }
+        }
+        /* ── Social Icons ── */
+        .footer-socials { display: flex; align-items: center; gap: 8px; }
+        .social-icon {
+            width: 32px; height: 32px;
+            border-radius: 8px;
+            display: flex; align-items: center; justify-content: center;
+            font-size: 15px;
+            text-decoration: none;
+            transition: transform 0.2s, opacity 0.2s;
+            opacity: 0.55;
+            flex-shrink: 0;
+        }
+        .social-icon:hover { transform: translateY(-2px); opacity: 1; }
+        .social-discord  { background: rgba(88,101,242,0.15);  border: 1px solid rgba(88,101,242,0.25);  color: #7289DA; }
+        .social-facebook { background: rgba(24,119,242,0.12);  border: 1px solid rgba(24,119,242,0.25);  color: #1877F2; }
+        .social-youtube  { background: rgba(255,0,0,0.10);     border: 1px solid rgba(255,0,0,0.2);      color: #FF0000; }
+        .social-tiktok   { background: rgba(255,255,255,0.05); border: 1px solid rgba(255,255,255,0.12); color: #fff; }
+        .social-discord:hover  { background: rgba(88,101,242,0.3);  opacity: 1; }
+        .social-facebook:hover { background: rgba(24,119,242,0.25); opacity: 1; }
+        .social-youtube:hover  { background: rgba(255,0,0,0.25);    opacity: 1; }
+        .social-tiktok:hover   { background: rgba(255,255,255,0.1); opacity: 1; }
+        /* ── Lua Syntax Colors (VS Code One Dark) ── */
+        .lua-fn     { color: #61AFEF; }
+        .lua-global { color: #C678DD; }
+        .lua-method { color: #E5C07B; }
+        .lua-str    { color: #98C379; }
+        .lua-punc   { color: #ABB2BF; }
     </style>
 </head>
 <body>
@@ -396,7 +669,7 @@
             </a>
             <div class="points-badge" onclick="window.location.href='ZENU_Topup.html'" id="points-display" style="display:none;">
                 <i class="fa-solid fa-coins"></i> 
-                <span id="user-points" class="label">0</span> <span style="font-size: 10px; margin-left: 2px;">P</span>
+                <span id="user-points" class="label">0</span> <span style="font-size: 16px; margin-left: 1px;">P</span>
             </div>
             <button class="nav-btn" onclick="openProfileModal()" id="btn-profile" style="display:none;">
                 <i class="fa-solid fa-user"></i> <span>PROFILE</span>
@@ -420,33 +693,138 @@
                 <button class="filter-btn" onclick="filterShop('lifetime')">ถาวร</button>
             </div>
             <div class="search-box">
-                <input type="text" id="search-input" placeholder="ค้นหาสินค้า..." onkeyup="filterShop()">
+                <input type="text" id="search-input" placeholder="ค้นหาสินค้า..." onkeyup="filterShop()" autocomplete="off" readonly onfocus="this.removeAttribute('readonly')">
                 <i class="fa-solid fa-magnifying-glass"></i>
             </div>
         </div>
         <div class="shop-grid" id="shop-grid"></div>
     </div>
 
+    <!-- SITE FOOTER -->
+    <footer class="site-footer">
+        <div class="footer-inner">
+
+            <!-- Script section -->
+            <div class="footer-heading">
+                <div class="footer-heading-icon">
+                    <i class="fa-solid fa-code"></i>
+                </div>
+                <div>
+                    <div class="footer-heading-text">Load Script</div>
+                    <div class="footer-heading-sub">คัดลอกสคริปต์แล้ววางในโปรแกรม Executor ของคุณ</div>
+                </div>
+            </div>
+
+            <div class="footer-script-box">
+                <span class="footer-script-text" id="footer-script-text"><span class="lua-fn">loadstring</span><span class="lua-punc">(</span><span class="lua-global">game</span><span class="lua-punc">:</span><span class="lua-method">HttpGet</span><span class="lua-punc">(</span><span class="lua-str">&quot;https://raw.githubusercontent.com/Karaca00/ZENU-HUB/refs/heads/main/Main.lua&quot;</span><span class="lua-punc">))()</span></span>
+                <button class="footer-copy-btn" id="footer-copy-btn" onclick="copyFooterScript()">
+                    <i class="fa-regular fa-copy"></i> COPY
+                </button>
+            </div>
+
+            <hr class="footer-divider">
+
+            <!-- Brand + copyright -->
+            <div class="footer-bottom">
+                <a class="footer-brand" href="#">
+                    <div class="footer-brand-icon">Z</div>
+                    <div class="footer-brand-name">ZENU <span>HUB</span></div>
+                </a>
+
+                <!-- Social Icons -->
+                <div class="footer-socials">
+                    <a class="social-icon social-discord"  href="https://discord.gg/2CeYwWBM5S" target="_blank" title="Discord">
+                        <i class="fa-brands fa-discord"></i>
+                    </a>
+                    <a class="social-icon social-facebook" href="https://www.facebook.com/pk.pywkp" target="_blank" title="Facebook">
+                        <i class="fa-brands fa-facebook"></i>
+                    </a>
+                    <a class="social-icon social-youtube"  href="https://www.youtube.com/@piyawat1606" target="_blank" title="YouTube">
+                        <i class="fa-brands fa-youtube"></i>
+                    </a>
+                    <a class="social-icon social-tiktok"   href="https://www.tiktok.com/@mr.piyawat01" target="_blank" title="TikTok">
+                        <i class="fa-brands fa-tiktok"></i>
+                    </a>
+                </div>
+
+                <span class="footer-copy-notice">© 2025 ZENU HUB · All rights reserved</span>
+            </div>
+
+        </div>
+    </footer>
+
+
     <!-- PROFILE MODAL -->
     <div id="profile-modal" class="modal-overlay">
-        <div class="modal-box">
-            <div class="profile-header">
-                <div class="profile-avatar"><i class="fa-solid fa-user"></i></div>
-                <div class="profile-name-box">
-                    <div class="profile-name" id="user-name-display">Loading...</div>
-                    <i class="fa-solid fa-pen-to-square edit-profile-icon" onclick="openEditProfile()" title="แก้ไขชื่อ"></i>
+        <div class="modal-box profile-layout">
+            <div class="profile-modal-inner">
+
+                <!-- Left / Top: Hero Card (avatar + info + stats) -->
+                <div class="profile-hero-card">
+                    <div class="profile-header">
+                        <div class="profile-avatar" id="profile-avatar-box">
+                            <i class="fa-solid fa-user"></i>
+                            <!-- Crown added dynamically for admin -->
+                        </div>
+                        <div class="profile-name-box">
+                            <div class="profile-name" id="user-name-display">Loading...</div>
+                            <i class="fa-solid fa-pen-to-square edit-profile-icon" onclick="openEditProfile()" title="แก้ไขชื่อ"></i>
+                        </div>
+                        <div class="profile-role member" id="user-role-display">MEMBER</div>
+                    </div>
+                    <div class="profile-stats-row">
+                        <div class="profile-stat-chip">
+                            <i class="fa-solid fa-coins"></i>
+                            <span id="profile-points-display">0</span>&nbsp;Points
+                        </div>
+                        <div class="profile-stat-chip">
+                            <i class="fa-solid fa-box-open"></i>
+                            <span id="profile-key-count">–</span>&nbsp;Keys
+                        </div>
+                    </div>
                 </div>
-                <div class="profile-role" id="user-role-display">MEMBER</div>
+
+                <!-- Right / Bottom: Actions -->
+                <div class="profile-actions">
+
+                    <!-- Admin Panel Group (Hidden by default) -->
+                    <div class="profile-btn-group admin-group" id="admin-panel-group" style="display:none;">
+                        <button class="btn-full" style="background:#1a1a22; border:1px solid #3a3a45; margin-top:0;" onclick="window.location.href='Shop_Manager.html'">
+                            <i class="fa-solid fa-store"></i> MANAGE SHOP
+                        </button>
+                        <button class="btn-full" style="background:#1a1a22; border:1px solid #3a3a45; margin-top:0;" onclick="window.location.href='Key_Manager.html'">
+                            <i class="fa-solid fa-key"></i> MANAGE KEYS
+                        </button>
+                    </div>
+
+                    <!-- Main Actions -->
+                    <div class="profile-btn-group main-actions">
+                        <button class="btn-full" style="background:rgba(255,0,0,0.15); border:1px solid rgba(255,0,0,0.3); margin-top:0;" onclick="openInventory()">
+                            <i class="fa-solid fa-box-open"></i> MY INVENTORY
+                        </button>
+                        <a href="Get_Key.html" class="btn-full" style="background:rgba(255,152,0,0.2); border:1px solid rgba(255,152,0,0.4); margin-top:0; text-decoration:none; color:#ff9800;">
+                            <i class="fa-solid fa-key"></i> GET KEY
+                        </a>
+                        <button class="btn-full" style="background:rgba(156,39,176,0.2); border:1px solid rgba(156,39,176,0.4); margin-top:0; color:#ce93d8;" onclick="openRedeemCodeModal()">
+                            <i class="fa-solid fa-ticket"></i> REDEEM CODE
+                        </button>
+                        <button class="btn-full" style="background:rgba(255,255,255,0.05); border:1px solid rgba(255,255,255,0.1); margin-top:0; color:#aaa;" onclick="openChangePasswordModal()">
+                            <i class="fa-solid fa-lock"></i> CHANGE PASSWORD
+                        </button>
+                    </div>
+
+                    <!-- Danger Zone -->
+                    <div class="profile-btn-group danger-zone">
+                        <button class="btn-full btn-cancel" style="color:#ff4444; border-color:rgba(255,68,68,0.2); margin-top:0;" onclick="logout()">
+                            <i class="fa-solid fa-right-from-bracket"></i> LOGOUT
+                        </button>
+                        <button class="btn-full btn-cancel" style="margin-top:0;" onclick="closeModal('profile-modal')">
+                            <i class="fa-solid fa-xmark"></i> CLOSE
+                        </button>
+                    </div>
+
+                </div>
             </div>
-            <div id="admin-panel-group" style="display:none; margin-bottom:15px;">
-                <button class="btn-full" style="background:#222; border:1px solid #444;" onclick="window.location.href='Shop_Manager.html'"><i class="fa-solid fa-store"></i> MANAGE SHOP</button>
-                <button class="btn-full" style="background:#222; border:1px solid #444;" onclick="window.location.href='Key_Manager.html'"><i class="fa-solid fa-key"></i> MANAGE KEYS</button>
-            </div>
-            <button class="btn-full" onclick="openInventory()"><i class="fa-solid fa-box-open"></i> MY INVENTORY</button>
-            <!-- Changed from Reset Password via Email to Change Password Modal -->
-            <button class="btn-full" style="background:#333; border:1px solid #444; margin-top:8px;" onclick="openChangePasswordModal()"><i class="fa-solid fa-lock"></i> CHANGE PASSWORD</button>
-            <button class="btn-full btn-cancel" style="color:#ff4444;" onclick="logout()">LOGOUT</button>
-            <button class="btn-full btn-cancel" onclick="closeModal('profile-modal')">Close</button>
         </div>
     </div>
 
@@ -510,7 +888,7 @@
             </div>
             <div class="inv-search-container">
                 <i class="fa-solid fa-magnifying-glass"></i>
-                <input type="text" id="inv-search-input" placeholder="ค้นหา..." onkeyup="filterInventory()">
+                <input type="text" id="inv-search-input" placeholder="ค้นหา..." onkeyup="filterInventory()" autocomplete="off">
             </div>
             <div class="inventory-list" id="inv-list">Loading...</div>
             <button class="btn-full btn-cancel" style="margin-top: 15px;" onclick="closeModal('inv-modal')">Close Window</button>
@@ -543,6 +921,25 @@
             </div>
         </div>
     </div>
+
+    <!-- REDEEM CODE MODAL -->
+    <div id="redeem-code-modal" class="modal-overlay">
+        <div class="modal-box" style="max-width:400px;">
+            <h3 style="color:#fff; margin:0 0 20px 0; font-size:18px; display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-ticket" style="color:var(--accent);"></i> REDEEM CODE
+            </h3>
+            <div class="input-group-modal">
+                <label>Enter Code</label>
+                <input type="text" id="redeem-code-input" placeholder="Enter your code here..." style="text-transform:uppercase;">
+            </div>
+            <button class="btn-full" onclick="redeemCode()">
+                <i class="fa-solid fa-check"></i> REDEEM
+            </button>
+            <button class="btn-full btn-cancel" onclick="closeModal('redeem-code-modal')">
+                <i class="fa-solid fa-xmark"></i> CLOSE
+            </button>
+        </div>
+    </div>
     
     <script src="API.js"></script>
     <script>
@@ -551,12 +948,18 @@
         const auth = firebase.auth();
         const rtdb = firebase.database();
         
-        let currentUser = null, userPoints = 0;
+        let currentUser = null, userPoints = 0, currentUserData = null;
         let productsCache = [], stockCache = {};
         let currentFilter = 'all';
         let inventoryTimer = null;
         let currentUsername = ""; 
         let confirmCallback = null; // For custom confirm
+
+        // ── Clear autofill suggestions at page load ──
+        window.addEventListener('load', function() {
+            document.getElementById('search-input').value = '';
+            document.getElementById('inv-search-input').value = '';
+        });
 
         showSkeleton();
 
@@ -613,16 +1016,40 @@
                 
                 rtdb.ref(`users/${user.uid}`).on('value', snap => {
                     const data = snap.val() || { points: 0, username: 'User' };
+                    currentUserData = data;
                     userPoints = data.points || 0;
                     currentUsername = data.username || "Unknown";
                     document.getElementById('user-points').innerText = userPoints.toLocaleString();
                     document.getElementById('user-name-display').innerText = currentUsername;
-                    const role = (data.role || 'members').toLowerCase();
-                    document.getElementById('user-role-display').innerText = role.toUpperCase();
-                    document.getElementById('admin-panel-group').style.display = (role === 'admin') ? 'block' : 'none';
+                    
+                    const role = (data.role || 'member').toLowerCase();
+                    const roleDisplay = document.getElementById('user-role-display');
+                    const avatarBox = document.getElementById('profile-avatar-box');
+                    
+                    // Update role badge
+                    roleDisplay.innerText = role.toUpperCase();
+                    roleDisplay.className = 'profile-role ' + role;
+                    
+                    // Update avatar styling and crown for admin
+                    if (role === 'admin') {
+                        avatarBox.classList.add('admin');
+                        // Add crown if not exists
+                        if (!avatarBox.querySelector('.admin-crown')) {
+                            const crown = document.createElement('i');
+                            crown.className = 'fa-solid fa-crown admin-crown';
+                            avatarBox.appendChild(crown);
+                        }
+                        document.getElementById('admin-panel-group').style.display = 'block';
+                    } else {
+                        avatarBox.classList.remove('admin');
+                        // Remove crown if exists
+                        const crown = avatarBox.querySelector('.admin-crown');
+                        if (crown) crown.remove();
+                        document.getElementById('admin-panel-group').style.display = 'none';
+                    }
                 });
             } else {
-                currentUser = null;
+                currentUser = null; currentUserData = null;
                 document.getElementById('auth-btn').style.display = 'flex';
                 document.getElementById('points-display').style.display = 'none';
                 document.getElementById('btn-profile').style.display = 'none';
@@ -873,6 +1300,21 @@
                                 }
                             }
 
+                            const deviceVal = i.device || '';
+                            const deviceShort = deviceVal.length > 28 ? deviceVal.substring(0,28)+'...' : deviceVal;
+                            const deviceRow = deviceVal
+                                ? `<div style="display:flex;align-items:center;gap:8px;background:rgba(255,255,255,0.03);border:1px solid rgba(255,255,255,0.06);border-radius:8px;padding:6px 10px;margin-top:8px;">
+                                        <i class="fa-solid fa-microchip" style="color:#555;font-size:10px;flex-shrink:0;"></i>
+                                        <span style="font-family:monospace;font-size:10px;color:#777;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;" title="${deviceVal}">${deviceShort}</span>
+                                        <button class="inv-action-btn" style="padding:3px 9px;font-size:10px;flex-shrink:0;" onclick="resetHWID('${i.key}')" title="รีเซ็ต Hardware ID">
+                                            <i class="fa-solid fa-rotate-right"></i> Reset HWID
+                                        </button>
+                                   </div>`
+                                : `<div style="display:flex;align-items:center;gap:6px;padding:6px 10px;margin-top:8px;border:1px dashed rgba(255,255,255,0.07);border-radius:8px;">
+                                        <i class="fa-solid fa-microchip" style="color:#3a3a4a;font-size:10px;"></i>
+                                        <span style="font-size:10px;color:#3a3a4a;">ยังไม่ได้ผูกอุปกรณ์</span>
+                                   </div>`;
+
                             inventoryHTML += `
                                 <div class="inv-card">
                                     <div class="inv-header">
@@ -888,7 +1330,8 @@
                                             ${actionBtns}
                                         </div>
                                     </div>
-                                    <div class="inv-footer">
+                                    ${deviceRow}
+                                    <div class="inv-footer" style="margin-top:10px;">
                                         <div class="inv-countdown-wrap">
                                             <span class="inv-countdown-label">เวลาที่เหลือ</span>
                                             ${timerHtml}
@@ -988,7 +1431,58 @@
             });
         }
 
-        function openProfileModal() { document.getElementById('profile-modal').classList.add('active'); }
+        function resetHWID(keyId) {
+            if (!currentUser) { showToast("กรุณาล็อกอินก่อน", "error"); return; }
+            const isAdmin = currentUserData && currentUserData.role === 'admin';
+            const confirmMsg = isAdmin
+                ? `Admin: รีเซ็ต HWID ของคีย์ ${keyId}?`
+                : `รีเซ็ต Hardware ID ของคีย์นี้?\nครั้งถัดไปที่รันสคริปต์จะผูก device ใหม่อัตโนมัติ`;
+
+            showConfirm(confirmMsg, async (confirmed) => {
+                if (!confirmed) return;
+                try {
+                    const snap = await rtdb.ref('Keys/' + keyId).once('value');
+                    const d = snap.val();
+                    if (!d) { showToast("ไม่พบคีย์นี้", "error"); return; }
+
+                    // เจ้าของหรือ admin เท่านั้น
+                    if (!isAdmin && d.sold_to !== currentUser.uid) {
+                        showToast("คุณไม่มีสิทธิ์รีเซ็ต HWID ของคีย์นี้", "error");
+                        return;
+                    }
+
+                    await rtdb.ref('Keys/' + keyId + '/device').set(null);
+                    showToast("รีเซ็ต Hardware ID สำเร็จ!", "success");
+                    openInventory();   // reload inventory
+                } catch (e) {
+                    showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+                }
+            });
+        }
+
+        function openProfileModal() {
+            // Sync points
+            const pp = document.getElementById('profile-points-display');
+            if(pp) pp.textContent = (typeof userPoints !== 'undefined' ? userPoints : 0).toLocaleString();
+
+            // Show modal
+            document.getElementById('profile-modal').classList.add('active');
+
+            // Load key count from Firebase directly
+            const pkc = document.getElementById('profile-key-count');
+            if(pkc && currentUser) {
+                pkc.textContent = '…';
+                rtdb.ref('Keys')
+                    .orderByChild('sold_to').equalTo(currentUser.uid)
+                    .once('value', snap => {
+                        const data = snap.val();
+                        if(!data) { pkc.textContent = '0'; document.getElementById('key-count').innerText = '0'; return; }
+                        const count = Object.values(data).filter(v => v.is_sold === true).length;
+                        pkc.textContent = count;
+                        document.getElementById('key-count').innerText = count;
+                    });
+            }
+        }
         function closeModal(id) { 
             document.getElementById(id).classList.remove('active'); 
             if(id === 'inv-modal') { 
@@ -1113,8 +1607,189 @@
             }
         }
 
+        // Listen for orientation changes and toggle layout class (for older browsers)
+        function openRedeemCodeModal() {
+            document.getElementById('redeem-code-input').value = '';
+            document.getElementById('redeem-code-modal').classList.add('active');
+        }
+
+        async function redeemCode() {
+            const code = document.getElementById('redeem-code-input').value.toUpperCase().trim();
+            if (!code) { showToast("กรุณากรอกโค้ด", "error"); return; }
+            if (!currentUser) { showToast("กรุณาล็อกอินก่อน", "error"); return; }
+
+            const btn = document.querySelector('#redeem-code-modal .btn-full');
+            btn.disabled = true;
+            btn.innerText = "กำลังตรวจสอบ...";
+
+            try {
+                const codeSnap = await rtdb.ref(`code/${code}`).once('value');
+                if (!codeSnap.exists()) {
+                    showToast("โค้ดไม่ถูกต้อง", "error");
+                    return;
+                }
+
+                const codeData = codeSnap.val();
+                const maxUsers       = parseInt(codeData.max_users) || 0;
+                const maxUsesPerUser = parseInt(codeData.max_uses_per_user) || 1;
+                const usedCount      = parseInt(codeData.used_count) || 0;
+                const maxPoints      = parseInt(codeData.points) || 0;
+                const actualPoints   = (codeData.actual_points !== undefined && codeData.actual_points !== null)
+                                        ? parseInt(codeData.actual_points) : maxPoints;
+                const isRandom       = codeData.random === true;
+
+                // ── ตรวจสอบโค้ดหมดหรือไม่ (unique users limit) ──
+                if (maxUsers > 0 && usedCount >= maxUsers) {
+                    showToast("⛔ โค้ดหมดแล้ว", "error");
+                    return;
+                }
+
+                // ── ตรวจสอบการใช้งานของ user นี้ ──
+                const userUsageSnap = await rtdb.ref(`code/${code}/users_used/${currentUser.uid}`).once('value');
+                const userUsageData = userUsageSnap.val();
+                const userUseCount  = userUsageData ? (parseInt(userUsageData.use_count) || 0) : 0;
+                const isNewUser     = !userUsageData; // user นี้ยังไม่เคยใช้
+
+                if (maxUsesPerUser > 0 && userUseCount >= maxUsesPerUser) {
+                    showToast("⚠️ คุณใช้โค้ดนี้ครบตามกำหนดแล้ว", "error");
+                    return;
+                }
+
+                // ── คำนวณ points ที่จะได้ ──
+                let pointsToAdd;
+                if (actualPoints >= maxPoints) {
+                    pointsToAdd = maxPoints;
+                } else if (isRandom) {
+                    pointsToAdd = Math.floor(Math.random() * (maxPoints - actualPoints + 1)) + actualPoints;
+                } else {
+                    pointsToAdd = actualPoints;
+                }
+
+                // ── ดึง username ──
+                const userSnap = await rtdb.ref(`users/${currentUser.uid}/username`).once('value');
+                const username = userSnap.val() || currentUser.email || currentUser.uid;
+
+                // ── อัปเดต points ผู้ใช้ ──
+                await rtdb.ref(`users/${currentUser.uid}`).update({
+                    points: userPoints + pointsToAdd
+                });
+
+                // ── อัปเดต users_used ของโค้ดนี้ ──
+                const prevTotalReward = userUsageData ? (parseInt(userUsageData.total_reward) || 0) : 0;
+                const newHistoryRef   = rtdb.ref(`code/${code}/users_used/${currentUser.uid}/history`).push();
+                
+                await rtdb.ref(`code/${code}/users_used/${currentUser.uid}`).update({
+                    username:     username,
+                    uid:          currentUser.uid,
+                    use_count:    userUseCount + 1,
+                    total_reward: prevTotalReward + pointsToAdd,
+                    last_reward:  pointsToAdd,
+                    last_used_at: firebase.database.ServerValue.TIMESTAMP
+                });
+
+                await newHistoryRef.set({
+                    used_at: firebase.database.ServerValue.TIMESTAMP,
+                    reward:  pointsToAdd
+                });
+                
+                // ── อัปเดต used_count (เฉพาะ user ใหม่) ──
+                if (isNewUser === true) {
+                    await rtdb.ref(`code/${code}`).update({
+                        used_count: usedCount + 1
+                    });
+                }
+
+                // ── อัปเดต local state ──
+                userPoints += pointsToAdd;
+
+                // ── แสดงผล ──
+                const newUsedCount = isNewUser ? usedCount + 1 : usedCount;
+                let notificationMsg = '';
+                let notificationMsgs = '';
+                
+                if (codeData.success_message) {
+                    notificationMsg = codeData.success_message;
+                } else {
+                    notificationMsg = `รับ ${pointsToAdd} พอยต์สำเร็จ!`;
+                }
+                
+                // เพิ่มข้อมูลเพิ่มเติม
+                if (maxUsers > 0) {
+                    const remaining = maxUsers - newUsedCount;
+                    if (remaining <= 0) {
+                        notificationMsgs += ` - โค้ดหมดแล้ว`;
+                    }
+                }
+                
+                notificationMsg = `🎉 ${notificationMsg} (+${pointsToAdd} พอยต์) ${notificationMsgs}`;
+                showToast(notificationMsg, "success");
+
+                closeModal('redeem-code-modal');
+                closeModal('profile-modal');
+
+            } catch (e) {
+                console.error(e);
+                showToast("เกิดข้อผิดพลาด: " + e.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "REDEEM";
+            }
+        }
+
+        function applyProfileLayout() {
+            const modalBox = document.querySelector('.modal-box.profile-layout');
+            if(!modalBox) return;
+            try {
+                if(window.matchMedia && window.matchMedia('(orientation: landscape)').matches) {
+                    modalBox.classList.add('landscape');
+                } else {
+                    modalBox.classList.remove('landscape');
+                }
+            } catch(e) { /* ignore */ }
+        }
+        window.addEventListener('resize', applyProfileLayout);
+        window.addEventListener('orientationchange', applyProfileLayout);
+        // apply at load
+        applyProfileLayout();
+
+        /* ── Footer: Copy script ── */
+        function copyFooterScript() {
+            const text = document.getElementById('footer-script-text').textContent;
+            const btn  = document.getElementById('footer-copy-btn');
+            
+            if (navigator.clipboard && navigator.clipboard.writeText) {
+                navigator.clipboard.writeText(text).then(() => {
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> COPIED!';
+                    btn.classList.add('copied');
+                    showToast('คัดลอกสคริปต์แล้ว!', 'success');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-regular fa-copy"></i> COPY';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                }).catch(() => showToast('ไม่สามารถคัดลอกได้', 'error'));
+            } else {
+                // Fallback for older browsers
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    btn.innerHTML = '<i class="fa-solid fa-check"></i> COPIED!';
+                    btn.classList.add('copied');
+                    showToast('คัดลอกสคริปต์แล้ว!', 'success');
+                    setTimeout(() => {
+                        btn.innerHTML = '<i class="fa-regular fa-copy"></i> COPY';
+                        btn.classList.remove('copied');
+                    }, 2000);
+                } catch (err) {
+                    showToast('ไม่สามารถคัดลอกได้', 'error');
+                } finally {
+                    document.body.removeChild(textarea);
+                }
+            }
+        }
+
     </script>
 </body>
 </html>
-
-

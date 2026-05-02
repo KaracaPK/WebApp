@@ -304,6 +304,7 @@
             <div class="row">
                 <div class="col"><div class="section-title">Prefix</div><input type="text" id="prefixInput" value="ZENU-HUB-"></div>
                 <div class="col"><div class="section-title">Length</div><input type="number" id="lengthInput" value="20"></div>
+                <div class="col"><div class="section-title">Quantity</div><input type="number" id="quantityInput" value="1" min="1" max="100"></div>
             </div>
 
             <div style="margin-top: 20px;">
@@ -339,7 +340,7 @@
             </div>
 
             <button onclick="addKeyToDB()" id="addBtn" class="btn-primary">
-                <i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEY
+                <i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEYS
             </button>
             <div id="status-msg" class="status-msg"></div>
         </div>
@@ -456,12 +457,32 @@
                 if (term === 'active' && item.activated) return true;
                 if (term === 'wait' && !item.activated) return true;
 
+                // ค้นหาด้วยชื่อผู้ซื้อ (buyer name)
+                if (item.sold_to && usernameCache[item.sold_to]) {
+                    const buyerName = usernameCache[item.sold_to].toLowerCase();
+                    if (buyerName.includes(term)) return true;
+                }
+
                 const aliases = { '1d': ['24 hour'], 'perm': ['permanent', 'life'] };
                 if (aliases[term] && aliases[term].some(a => d.includes(a))) return true;
 
                 return false;
             });
             renderKeyList(list);
+        }
+
+        let usernameCache = {};
+        function getUsername(uid) {
+            return new Promise((resolve) => {
+                if (!uid) return resolve('');
+                if (usernameCache[uid]) return resolve(usernameCache[uid]);
+                db.ref(`users/${uid}`).once('value').then(snap => {
+                    const v = snap.val() || {};
+                    const name = v.username || v.name || v.displayName || v.email || uid;
+                    usernameCache[uid] = name;
+                    resolve(name);
+                }).catch(() => resolve(uid));
+            });
         }
 
         function renderKeyList(keys) {
@@ -487,6 +508,7 @@
                 let isPerm = label.includes('PERM') || label.includes('LIFE');
 
                 const soldHtml = isSold ? `<span class="status-tag tag-sold"><i class="fa-solid fa-check"></i> SOLD</span>` : `<span class="status-tag tag-free">FREE</span>`;
+                const buyerHtml = (isSold && item.sold_to) ? `<span class="meta-buyer" id="buyer-${item.key}" data-sold-to="${item.sold_to}">Sold to: ${item.sold_to}</span>` : '';
 
                 let mainClass = "key-item active-item";
                 if (!isActiveInStock) {
@@ -512,7 +534,7 @@
                 div.innerHTML = `
                     <div class="key-info">
                         <div class="key-code ${!isActiveInStock ? 'suspended-text' : ''}">${item.key}</div>
-                        <div class="meta-row">${soldHtml} ${typeHtml} ${timerHtml}</div>
+                        <div class="meta-row">${soldHtml} ${typeHtml} ${timerHtml} ${buyerHtml}</div>
                     </div>
                     <div class="actions">
                         <div onclick="toggleSoldStatus('${item.key}', ${isSold})" class="btn-action btn-status ${isSold?'active':''}" title="Toggle Sold Status">
@@ -528,6 +550,14 @@
                         <div onclick="deleteKey('${item.key}', this)" class="btn-action btn-del"><i class="fa-solid fa-trash-can"></i></div>
                     </div>`;
                 fragment.appendChild(div);
+
+                if (item.sold_to) {
+                    // replace sold_to uid with username when available
+                    getUsername(item.sold_to).then(name => {
+                        const el = document.getElementById(`buyer-${item.key}`);
+                        if (el) el.innerText = `Sold to: ${name}`;
+                    });
+                }
             });
 
             container.innerHTML = "";
@@ -582,13 +612,39 @@
             return amount * multiplier;
         }
 
+        function generateUniqueKey(prefix, length, existingKeys) {
+            const chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
+            let attempts = 0;
+            const maxAttempts = 100;
+            
+            while (attempts < maxAttempts) {
+                let result = "";
+                for (let i = 0; i < length; i++) {
+                    result += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                const newKey = prefix + result;
+                
+                // ตรวจสอบว่าคีย์ไม่ซ้ำ
+                if (!existingKeys.has(newKey)) {
+                    existingKeys.add(newKey);
+                    return newKey;
+                }
+                attempts++;
+            }
+            return null; // ถ้าสร้างไม่ได้หลังพยายาม 100 ครั้ง
+        }
+
         window.addKeyToDB = function() {
-            const key = document.getElementById('keyInput').value.trim();
+            const quantity = parseInt(document.getElementById('quantityInput').value) || 1;
             const btn = document.getElementById('addBtn');
-            if (!key) return;
+            
+            if (quantity < 1 || quantity > 100) {
+                showStatus("❌ QUANTITY MUST BE 1-100", "text-red");
+                return;
+            }
             
             btn.disabled = true;
-            btn.innerHTML = '<i class="fa-solid fa-circle-notch fa-spin"></i> UPLOADING...';
+            btn.innerHTML = `<i class="fa-solid fa-circle-notch fa-spin"></i> CREATING ${quantity} KEYS...`;
             
             let durationLabel = "LIFETIME";
 
@@ -604,20 +660,59 @@
                 }
             }
 
-            keysRef.child(key).set({ 
-                active: true, 
-                is_sold: false, 
-                expires_at: null, 
-                activated: false,
-                duration_label: durationLabel, 
-                created_at: firebase.database.ServerValue.TIMESTAMP 
-            }).then(() => { 
-                showStatus("✅ KEY UPLOADED", "text-green"); 
-                btn.classList.add('anim-success-pulse');
-                setTimeout(() => btn.classList.remove('anim-success-pulse'), 600);
-                generateRandomKey(); 
-            }).catch((e) => { showStatus("❌ ERROR: " + e.code, "text-red"); })
-            .finally(() => { btn.disabled = false; btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEY'; });
+            const prefix = document.getElementById('prefixInput').value;
+            const length = parseInt(document.getElementById('lengthInput').value) || 12;
+            
+            // สร้าง Set ของคีย์ที่มีอยู่แล้ว
+            const existingKeys = new Set(allKeysCache.map(k => k.key));
+            
+            let createdCount = 0;
+            let failedCount = 0;
+            const keysToCreate = [];
+            
+            // สร้างคีย์ที่ไม่ซ้ำ
+            for (let i = 0; i < quantity; i++) {
+                const newKey = generateUniqueKey(prefix, length, existingKeys);
+                if (newKey) {
+                    keysToCreate.push(newKey);
+                } else {
+                    failedCount++;
+                }
+            }
+            
+            if (keysToCreate.length === 0) {
+                showStatus("❌ ERROR: COULD NOT GENERATE UNIQUE KEYS", "text-red");
+                btn.disabled = false;
+                btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEYS';
+                return;
+            }
+            
+            // Upload คีย์พร้อมกัน
+            const uploadPromises = keysToCreate.map(key => {
+                return keysRef.child(key).set({ 
+                    active: true, 
+                    is_sold: false, 
+                    expires_at: null, 
+                    activated: false,
+                    duration_label: durationLabel, 
+                    created_at: firebase.database.ServerValue.TIMESTAMP 
+                }).then(() => { createdCount++; });
+            });
+            
+            Promise.all(uploadPromises)
+                .then(() => {
+                    let msg = `✅ CREATED ${createdCount} KEYS`;
+                    if (failedCount > 0) msg += ` (${failedCount} FAILED)`;
+                    showStatus(msg, "text-green");
+                    btn.classList.add('anim-success-pulse');
+                    setTimeout(() => btn.classList.remove('anim-success-pulse'), 600);
+                    generateRandomKey();
+                })
+                .catch((e) => { showStatus("❌ ERROR: " + e.code, "text-red"); })
+                .finally(() => { 
+                    btn.disabled = false; 
+                    btn.innerHTML = '<i class="fa-solid fa-cloud-arrow-up"></i> CREATE KEYS'; 
+                });
         }
 
         window.toggleSoldStatus = function(keyStr, currentStatus) { 
@@ -709,6 +804,12 @@
             el.innerText = msg; el.className = `status-msg ${cls}`; el.style.opacity = '1';
             setTimeout(() => el.style.opacity = '0', 3000);
         }
+
+        // Update key input display
+        document.getElementById('quantityInput').addEventListener('change', function() {
+            if (this.value < 1) this.value = 1;
+            if (this.value > 100) this.value = 100;
+        });
 
         setInterval(() => {
             const now = Date.now();
